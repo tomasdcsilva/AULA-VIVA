@@ -15,6 +15,9 @@ import {
   getChatMessageById,
   getChatMessages,
   getCoordinationStats,
+  getKahootLeaderboard,
+  getKahootQuestionStats,
+  getKahootState,
   getQuestions,
   getQuizById,
   getQuizzesByTeacher,
@@ -24,8 +27,11 @@ import {
   getSessionsByTeacher,
   hasResponded,
   incrementParticipant,
+  kahootCloseQuestion,
+  kahootNextQuestion,
   moderateMessage,
   saveChatMessage,
+  saveKahootResponse,
   saveResponse,
   updateQuiz,
   updateSession,
@@ -208,6 +214,7 @@ export const appRouter = router({
         z.object({
           quizId: z.number(),
           school: z.string().optional(),
+          mode: z.enum(["normal", "kahoot"]).optional().default("normal"),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -226,6 +233,7 @@ export const appRouter = router({
           quizId: input.quizId,
           teacherId: ctx.user.id,
           school: input.school,
+          mode: input.mode,
           status: "waiting",
         });
         const session = await getSessionByCode(code);
@@ -285,6 +293,7 @@ export const appRouter = router({
           sessionCode: s.code,
           anonToken,
           status: s.status,
+          mode: s.mode,
           showResultsImmediately: quiz?.showResultsImmediately ?? false,
           chatEnabled: s.chatEnabled,
           questions: sessionQuestions.map((q) => ({
@@ -456,6 +465,95 @@ export const appRouter = router({
           suggestions: generateSuggestions(questionStats),
         };
       }),
+  }),
+
+  // ── Kahoot ────────────────────────────────────────────────────────────────
+  kahoot: router({
+    /** Estado atual da sessão (polling a cada 1s pelo aluno e professor) */
+    state: publicProcedure
+      .input(z.object({ sessionId: z.number() }))
+      .query(({ input }) => getKahootState(input.sessionId)),
+
+    /** Professor lança a próxima pergunta */
+    nextQuestion: protectedProcedure
+      .input(
+        z.object({
+          sessionId: z.number(),
+          questionIndex: z.number(),
+          durationSeconds: z.number().min(5).max(120).default(20),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const s = await getSessionById(input.sessionId);
+        if (!s) throw new TRPCError({ code: "NOT_FOUND" });
+        if (s.teacherId !== ctx.user.id && ctx.user.role !== "admin")
+          throw new TRPCError({ code: "FORBIDDEN" });
+        await kahootNextQuestion(input.sessionId, input.questionIndex, input.durationSeconds);
+        return { success: true };
+      }),
+
+    /** Professor encerra a pergunta ativa */
+    closeQuestion: protectedProcedure
+      .input(z.object({ sessionId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const s = await getSessionById(input.sessionId);
+        if (!s) throw new TRPCError({ code: "NOT_FOUND" });
+        if (s.teacherId !== ctx.user.id && ctx.user.role !== "admin")
+          throw new TRPCError({ code: "FORBIDDEN" });
+        await kahootCloseQuestion(input.sessionId);
+        return { success: true };
+      }),
+
+    /** Aluno submete resposta rápida (anónima) */
+    answer: publicProcedure
+      .input(
+        z.object({
+          sessionId: z.number(),
+          anonToken: z.string(),
+          answer: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const s = await getSessionById(input.sessionId);
+        if (!s || s.status !== "active")
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Pergunta não está aberta." });
+        // Obter o questionId real da pergunta ativa
+        const quiz = await getQuizById(s.quizId);
+        if (!quiz) throw new TRPCError({ code: "NOT_FOUND", message: "Quiz não encontrado." });
+        const qIds: number[] = JSON.parse(quiz.questionIds);
+        const activeQId = qIds[s.activeQuestionIndex];
+        if (!activeQId) throw new TRPCError({ code: "BAD_REQUEST", message: "Nenhuma pergunta ativa." });
+        // Evitar resposta dupla
+        const already = await hasResponded(input.sessionId, activeQId, input.anonToken);
+        if (already) throw new TRPCError({ code: "BAD_REQUEST", message: "Já respondeste." });
+        // Obter resposta correta
+        const { questions: qTable } = await import("../drizzle/schema");
+        const { eq: eqFn } = await import("drizzle-orm");
+        const db = await import("./db").then((m) => m.getDb());
+        let correctOption: number | null = null;
+        if (db) {
+          const qRows = await db.select().from(qTable).where(eqFn(qTable.id, activeQId)).limit(1);
+          correctOption = qRows[0]?.correctOption ?? null;
+        }
+        await saveKahootResponse({
+          sessionId: input.sessionId,
+          questionId: activeQId,
+          anonToken: input.anonToken,
+          answer: input.answer,
+          correctOption,
+        });
+        return { success: true, questionId: activeQId };
+      }),
+
+    /** Estatísticas de uma pergunta (após fechar) */
+    questionStats: publicProcedure
+      .input(z.object({ sessionId: z.number(), questionId: z.number() }))
+      .query(({ input }) => getKahootQuestionStats(input.sessionId, input.questionId)),
+
+    /** Placar final anónimo */
+    leaderboard: publicProcedure
+      .input(z.object({ sessionId: z.number() }))
+      .query(({ input }) => getKahootLeaderboard(input.sessionId)),
   }),
 
   // ── Coordenação ───────────────────────────────────────────────────────────

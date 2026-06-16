@@ -2,8 +2,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import PedagogicBox from "@/components/PedagogicBox";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, Plus, Play, Clock, CheckCircle, Trash2, Copy, BarChart3 } from "lucide-react";
-import { Link } from "wouter";
+import { BookOpen, Plus, Play, Clock, CheckCircle, Trash2, Copy, Gamepad2 } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -16,6 +16,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 
 export default function Dashboard() {
   const { isAuthenticated, loading } = useAuth();
+  const [, navigate] = useLocation();
   const { data: quizzes, refetch: refetchQuizzes } = trpc.quizzes.list.useQuery(undefined, { enabled: isAuthenticated });
   const { data: sessions } = trpc.sessions.list.useQuery(undefined, { enabled: isAuthenticated });
   const deleteQuiz = trpc.quizzes.delete.useMutation({ onSuccess: () => refetchQuizzes() });
@@ -23,6 +24,15 @@ export default function Dashboard() {
     onSuccess: () => { refetchQuizzes(); toast.success("Quiz duplicado!"); },
     onError: (e) => toast.error(e.message),
   });
+  const createKahootSession = trpc.sessions.create.useMutation({
+    onSuccess: (s) => {
+      navigate(`/kahoot/host/${s.id}`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const handleLaunchKahoot = (quizId: number) => {
+    createKahootSession.mutate({ quizId, mode: "kahoot" });
+  };
   const createSession = trpc.sessions.create.useMutation({
     onSuccess: (s) => {
       toast.success(`Sessão criada! Código: ${s.code}`);
@@ -140,7 +150,7 @@ export default function Dashboard() {
                   {q.className && <span className="av-badge bg-cream-dark text-navy">👥 {q.className}</span>}
                 </div>
                 <div className="flex gap-2">
-                  <Link href={`/quiz/${q.id}/edit`} className="flex-1 text-center text-sm font-semibold text-teal border border-teal rounded-lg py-2 hover:bg-teal hover:text-white transition-colors">
+                  <Link href={`/quiz/${q.id}/edit`} className="text-center text-sm font-semibold text-teal border border-teal rounded-lg py-2 px-3 hover:bg-teal hover:text-white transition-colors">
                     Editar
                   </Link>
                   <button
@@ -148,7 +158,15 @@ export default function Dashboard() {
                     disabled={createSession.isPending}
                     className="flex-1 av-btn-primary text-sm py-2 flex items-center justify-center gap-1"
                   >
-                    <Play className="w-3 h-3" /> Lançar Sessão
+                    <Play className="w-3 h-3" /> Sessão
+                  </button>
+                  <button
+                    onClick={() => handleLaunchKahoot(q.id)}
+                    disabled={createKahootSession.isPending}
+                    title="Lançar em Modo Jogo (Kahoot)"
+                    className="bg-[#e21b3c] hover:bg-[#c01532] text-white text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-95 font-semibold"
+                  >
+                    <Gamepad2 className="w-3.5 h-3.5" /> Jogo
                   </button>
                 </div>
               </div>

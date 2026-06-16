@@ -12,7 +12,12 @@ export default function JoinSession() {
     onSuccess: (data) => {
       // Guardar dados da sessão no sessionStorage (sem identificação)
       sessionStorage.setItem("av_session", JSON.stringify(data));
-      navigate(`/student/${data.sessionId}`);
+      // Redirecionar para modo Kahoot se aplicável
+      if (data.mode === "kahoot") {
+        navigate(`/kahoot/play/${data.sessionId}`);
+      } else {
+        navigate(`/student/${data.sessionId}`);
+      }
     },
     onError: (e) => toast.error(e.message),
   });

@@ -40,6 +40,7 @@ export const questions = mysqlTable("questions", {
     .default("low")
     .notNull(),
   options: text("options"), // JSON array of strings for multiple_choice/scale
+  correctOption: int("correctOption"), // índice da opção correta (para modo Kahoot)
   discipline: varchar("discipline", { length: 128 }),
   yearGroup: varchar("yearGroup", { length: 32 }),
   literaryWork: varchar("literaryWork", { length: 256 }),
@@ -77,12 +78,17 @@ export const sessions = mysqlTable("sessions", {
   quizId: int("quizId").notNull(),
   teacherId: int("teacherId").notNull(),
   school: varchar("school", { length: 256 }),
+  mode: mysqlEnum("mode", ["normal", "kahoot"]).default("normal").notNull(),
   status: mysqlEnum("status", ["waiting", "active", "voting_closed", "chat_open", "closed"])
     .default("waiting")
     .notNull(),
   chatEnabled: boolean("chatEnabled").default(false).notNull(),
   chatPaused: boolean("chatPaused").default(false).notNull(),
   participantCount: int("participantCount").default(0).notNull(),
+  // Campos para modo Kahoot
+  activeQuestionIndex: int("activeQuestionIndex").default(-1).notNull(),
+  questionStartedAt: timestamp("questionStartedAt"),
+  questionDuration: int("questionDuration").default(20).notNull(), // segundos
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   closedAt: timestamp("closedAt"),
 });
@@ -98,6 +104,8 @@ export const sessionResponses = mysqlTable("session_responses", {
   // token temporário de sessão (não associado a nenhum utilizador real)
   anonToken: varchar("anonToken", { length: 64 }).notNull(),
   answer: text("answer").notNull(), // valor da resposta (opção, número ou texto)
+  answeredAt: timestamp("answeredAt").defaultNow().notNull(), // para calcular velocidade no Kahoot
+  isCorrect: boolean("isCorrect"), // null para perguntas sem resposta certa
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

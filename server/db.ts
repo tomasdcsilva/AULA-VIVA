@@ -306,3 +306,187 @@ export async function getCoordinationStats(filters?: {
 
   return { totalSessions, totalParticipants, bySchool, byDiscipline: [] };
 }
+
+// ─── Modo Kahoot ──────────────────────────────────────────────────────────────
+
+/** Avança para a próxima pergunta e regista o timestamp de início */
+export async function kahootNextQuestion(
+  sessionId: number,
+  questionIndex: number,
+  durationSeconds: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .update(sessions)
+    .set({
+      activeQuestionIndex: questionIndex,
+      questionStartedAt: new Date(),
+      questionDuration: durationSeconds,
+      status: "active",
+    })
+    .where(eq(sessions.id, sessionId));
+}
+
+/** Encerra a pergunta ativa (sem avançar para a próxima) */
+export async function kahootCloseQuestion(sessionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db
+    .update(sessions)
+    .set({ status: "voting_closed" })
+    .where(eq(sessions.id, sessionId));
+}
+
+/** Submete resposta Kahoot com validação de resposta correta */
+export async function saveKahootResponse(data: {
+  sessionId: number;
+  questionId: number;
+  anonToken: string;
+  answer: string;
+  correctOption: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  // Determinar se a resposta é correta
+  let isCorrect: boolean | null = null;
+  if (data.correctOption !== null && data.correctOption !== undefined) {
+    isCorrect = data.answer === String(data.correctOption);
+  }
+
+  await db.insert(sessionResponses).values({
+    sessionId: data.sessionId,
+    questionId: data.questionId,
+    anonToken: data.anonToken,
+    answer: data.answer,
+    answeredAt: new Date(),
+    isCorrect,
+  });
+}
+
+/** Obtém o estado atual da sessão Kahoot para polling */
+export async function getKahootState(sessionId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const sess = await getSessionById(sessionId);
+  if (!sess) return null;
+
+  // Contar respostas para a pergunta ativa
+  let answersForActive = 0;
+  if (sess.activeQuestionIndex >= 0) {
+    const quiz = await getQuizById(sess.quizId);
+    if (quiz) {
+      const qIds: number[] = JSON.parse(quiz.questionIds);
+      const activeQId = qIds[sess.activeQuestionIndex];
+      if (activeQId) {
+        const rows = await db
+          .select()
+          .from(sessionResponses)
+          .where(
+            and(
+              eq(sessionResponses.sessionId, sessionId),
+              eq(sessionResponses.questionId, activeQId)
+            )
+          );
+        answersForActive = rows.length;
+      }
+    }
+  }
+
+  // Calcular tempo restante
+  let timeRemaining = 0;
+  if (sess.questionStartedAt && sess.status === "active") {
+    const elapsed = (Date.now() - new Date(sess.questionStartedAt).getTime()) / 1000;
+    timeRemaining = Math.max(0, sess.questionDuration - elapsed);
+  }
+
+  // Obter o questionId real da pergunta ativa
+  let activeQuestionId: number | null = null;
+  let activeQuestionData: { id: number; text: string; options: string[] | null } | null = null;
+  if (sess.activeQuestionIndex >= 0) {
+    const quiz = await getQuizById(sess.quizId);
+    if (quiz) {
+      const qIds: number[] = JSON.parse(quiz.questionIds);
+      activeQuestionId = qIds[sess.activeQuestionIndex] ?? null;
+      if (activeQuestionId) {
+        const allQs = await getQuestions();
+        const q = allQs.find((q) => q.id === activeQuestionId);
+        if (q) {
+          activeQuestionData = {
+            id: q.id,
+            text: q.text,
+            options: q.options ? JSON.parse(q.options) : null,
+          };
+        }
+      }
+    }
+  }
+
+  return {
+    status: sess.status,
+    activeQuestionIndex: sess.activeQuestionIndex,
+    activeQuestionId,
+    activeQuestion: activeQuestionData,
+    questionDuration: sess.questionDuration,
+    questionStartedAt: sess.questionStartedAt,
+    timeRemaining: Math.round(timeRemaining),
+    answersForActive,
+    participantCount: sess.participantCount,
+
+  };
+}
+
+/** Obtém estatísticas de respostas para uma pergunta específica (para mostrar após fechar) */
+export async function getKahootQuestionStats(sessionId: number, questionId: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, correct: 0, byOption: {} };
+
+  const rows = await db
+    .select()
+    .from(sessionResponses)
+    .where(
+      and(
+        eq(sessionResponses.sessionId, sessionId),
+        eq(sessionResponses.questionId, questionId)
+      )
+    );
+
+  const total = rows.length;
+  const correct = rows.filter((r) => r.isCorrect === true).length;
+  const byOption: Record<string, number> = {};
+  for (const r of rows) {
+    byOption[r.answer] = (byOption[r.answer] ?? 0) + 1;
+  }
+
+  return { total, correct, byOption };
+}
+
+/** Placar final: ordena tokens anónimos por nº de respostas corretas (sem identificar ninguém) */
+export async function getKahootLeaderboard(sessionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select()
+    .from(sessionResponses)
+    .where(eq(sessionResponses.sessionId, sessionId));
+
+  // Agregar por token anónimo
+  const map: Record<string, { correct: number; total: number }> = {};
+  for (const r of rows) {
+    if (!map[r.anonToken]) map[r.anonToken] = { correct: 0, total: 0 };
+    map[r.anonToken].total++;
+    if (r.isCorrect) map[r.anonToken].correct++;
+  }
+
+  // Ordenar por corretas desc, atribuir posição anónima
+  const sorted = Object.values(map).sort((a, b) => b.correct - a.correct || b.total - a.total);
+
+  return sorted.map((entry, i) => ({
+    position: i + 1,
+    correct: entry.correct,
+    total: entry.total,
+  }));
+}

@@ -14,16 +14,8 @@ import SessionManager from "./pages/SessionManager";
 import JoinSession from "./pages/JoinSession";
 import StudentSession from "./pages/StudentSession";
 import Coordination from "./pages/Coordination";
-
-// Rotas sem o layout principal (fluxo do aluno)
-const STUDENT_ROUTES = ["/join", "/student/:id"];
-
-function isStudentRoute(path: string) {
-  return STUDENT_ROUTES.some((r) => {
-    const pattern = r.replace(/:[\w]+/g, "[^/]+");
-    return new RegExp(`^${pattern}$`).test(path);
-  });
-}
+import KahootHost from "./pages/KahootHost";
+import KahootPlayer from "./pages/KahootPlayer";
 
 function Router() {
   return (
@@ -31,6 +23,10 @@ function Router() {
       {/* Rotas públicas do aluno (sem navbar) */}
       <Route path="/join" component={JoinSession} />
       <Route path="/student/:id" component={StudentSession} />
+
+      {/* Rotas Kahoot (ecrã completo, sem navbar) */}
+      <Route path="/kahoot/host/:id" component={KahootHost} />
+      <Route path="/kahoot/play/:id" component={KahootPlayer} />
 
       {/* Rotas com layout */}
       <Route path="/" component={() => <Layout><Home /></Layout>} />

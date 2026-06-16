@@ -57,3 +57,20 @@
 - [x] Restringir votes.submit para aceitar apenas quando sessão está em estado "active"
 - [x] Validar ownership na moderação do chat (só professor da sessão ou admin)
 - [x] Implementar quizzes.duplicate no backend e UI
+
+## Modo Kahoot (Jogo em Tempo Real)
+- [x] Adicionar campo `mode` (normal | kahoot) à tabela sessions
+- [x] Adicionar campo `activeQuestionIndex` e `questionStartedAt` à tabela sessions
+- [x] Adicionar campo `answeredAt` e `isCorrect` à tabela session_responses
+- [x] Migrar schema para a base de dados
+- [x] Router: lançar próxima pergunta (professor)
+- [x] Router: submeter resposta rápida do aluno com timestamp
+- [x] Router: obter estado atual da sessão Kahoot (pergunta ativa, tempo restante, respostas)
+- [x] Router: avançar para resultados da pergunta
+- [x] Router: placar final anónimo (ordenado por nº de respostas corretas)
+- [x] Ecrã do professor: modo Kahoot com botão "Próxima Pergunta", barra de progresso e contagem de respostas em tempo real
+- [x] Ecrã do aluno: 4 botões coloridos estilo Kahoot com temporizador visual
+- [x] Ecrã de resultados por pergunta (gráfico de barras com resposta correta destacada)
+- [x] Ecrã de placar final anónimo com pódio
+- [x] Integrar modo Kahoot no fluxo de criação de quiz (botão "Jogo" no Dashboard)
+- [x] Redirecionamento automático no JoinSession quando mode=kahoot
