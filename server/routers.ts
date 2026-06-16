@@ -12,6 +12,7 @@ import {
   deleteQuiz,
   getAllChatMessages,
   getAllResponsesForSession,
+  getChatMessageById,
   getChatMessages,
   getCoordinationStats,
   getQuestions,
@@ -176,6 +177,27 @@ export const appRouter = router({
         if (quiz.createdBy !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
         await deleteQuiz(input.id);
         return { success: true };
+      }),
+
+    duplicate: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const quiz = await getQuizById(input.id);
+        if (!quiz) throw new TRPCError({ code: "NOT_FOUND" });
+        if (quiz.createdBy !== ctx.user.id && ctx.user.role !== "admin")
+          throw new TRPCError({ code: "FORBIDDEN" });
+        const newId = await createQuiz({
+          title: `${quiz.title} (cópia)`,
+          description: quiz.description ?? undefined,
+          literaryWork: quiz.literaryWork ?? undefined,
+          discipline: quiz.discipline ?? undefined,
+          yearGroup: quiz.yearGroup ?? undefined,
+          className: quiz.className ?? undefined,
+          showResultsImmediately: quiz.showResultsImmediately ?? false,
+          questionIds: quiz.questionIds,
+          createdBy: ctx.user.id,
+        });
+        return { id: newId };
       }),
   }),
 
@@ -364,6 +386,10 @@ export const appRouter = router({
         if (!s) throw new TRPCError({ code: "NOT_FOUND" });
         if (s.teacherId !== ctx.user.id && ctx.user.role !== "admin")
           throw new TRPCError({ code: "FORBIDDEN", message: "Só o professor da sessão pode moderar mensagens." });
+        // Validar que a mensagem pertence realmente a esta sessão
+        const msg = await getChatMessageById(input.messageId);
+        if (!msg || msg.sessionId !== input.sessionId)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Mensagem não pertence a esta sessão." });
         await moderateMessage(input.messageId, input.action);
         return { success: true };
       }),

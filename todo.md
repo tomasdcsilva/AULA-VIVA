@@ -54,6 +54,6 @@
 - [x] Testes vitest para routers principais
 
 ## Melhorias Identificadas
-- [ ] Restringir votes.submit para aceitar apenas quando sessão está em estado "active"
-- [ ] Validar ownership na moderação do chat (só professor da sessão ou admin)
-- [ ] Implementar quizzes.duplicate no backend e UI
+- [x] Restringir votes.submit para aceitar apenas quando sessão está em estado "active"
+- [x] Validar ownership na moderação do chat (só professor da sessão ou admin)
+- [x] Implementar quizzes.duplicate no backend e UI

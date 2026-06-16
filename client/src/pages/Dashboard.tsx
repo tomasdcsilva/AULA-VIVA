@@ -19,6 +19,10 @@ export default function Dashboard() {
   const { data: quizzes, refetch: refetchQuizzes } = trpc.quizzes.list.useQuery(undefined, { enabled: isAuthenticated });
   const { data: sessions } = trpc.sessions.list.useQuery(undefined, { enabled: isAuthenticated });
   const deleteQuiz = trpc.quizzes.delete.useMutation({ onSuccess: () => refetchQuizzes() });
+  const duplicateQuiz = trpc.quizzes.duplicate.useMutation({
+    onSuccess: () => { refetchQuizzes(); toast.success("Quiz duplicado!"); },
+    onError: (e) => toast.error(e.message),
+  });
   const createSession = trpc.sessions.create.useMutation({
     onSuccess: (s) => {
       toast.success(`Sessão criada! Código: ${s.code}`);
@@ -112,6 +116,13 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="flex gap-1">
+                    <button
+                      onClick={() => duplicateQuiz.mutate({ id: q.id })}
+                      className="p-2 text-muted-foreground hover:text-teal transition-colors rounded-lg hover:bg-teal-light"
+                      title="Duplicar quiz"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => {
                         if (confirm("Eliminar este quiz?")) deleteQuiz.mutate({ id: q.id });

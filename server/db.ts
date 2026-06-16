@@ -249,6 +249,13 @@ export async function getAllChatMessages(sessionId: number) {
   return db.select().from(chatMessages).where(eq(chatMessages.sessionId, sessionId)).orderBy(chatMessages.createdAt);
 }
 
+export async function getChatMessageById(messageId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(chatMessages).where(eq(chatMessages.id, messageId)).limit(1);
+  return rows[0] ?? undefined;
+}
+
 export async function moderateMessage(
   messageId: number,
   action: "hide" | "highlight" | "flag_sensitive"
