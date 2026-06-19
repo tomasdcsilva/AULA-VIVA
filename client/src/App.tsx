@@ -16,10 +16,14 @@ import StudentSession from "./pages/StudentSession";
 import Coordination from "./pages/Coordination";
 import KahootHost from "./pages/KahootHost";
 import KahootPlayer from "./pages/KahootPlayer";
+import Login from "./pages/Login";
 
 function Router() {
   return (
     <Switch>
+      {/* Página de login personalizada (sem navbar) */}
+      <Route path="/login" component={Login} />
+
       {/* Rotas públicas do aluno (sem navbar) */}
       <Route path="/join" component={JoinSession} />
       <Route path="/student/:id" component={StudentSession} />
@@ -31,8 +35,12 @@ function Router() {
       {/* Rotas com layout */}
       <Route path="/" component={() => <Layout><Home /></Layout>} />
       <Route path="/dashboard" component={() => <Layout><Dashboard /></Layout>} />
-      <Route path="/quiz/new" component={() => <Layout><QuizEditor /></Layout>} />
-      <Route path="/quiz/:id/edit" component={() => <Layout><QuizEditor /></Layout>} />
+      <Route path="/quiz/new">
+        {() => <Layout><QuizEditor id="new" /></Layout>}
+      </Route>
+      <Route path="/quiz/:id/edit">
+        {(params) => <Layout><QuizEditor id={params.id} /></Layout>}
+      </Route>
       <Route path="/questions" component={() => <Layout><QuestionBank /></Layout>} />
       <Route path="/session/:id" component={() => <Layout><SessionManager /></Layout>} />
       <Route path="/coordination" component={() => <Layout><Coordination /></Layout>} />

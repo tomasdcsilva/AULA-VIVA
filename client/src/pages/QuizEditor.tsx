@@ -20,8 +20,13 @@ const SENSITIVITY: Record<string, string> = {
   high: "🔴 Alta",
 };
 
-export default function QuizEditor() {
-  const { id } = useParams<{ id: string }>();
+interface QuizEditorProps {
+  id?: string;
+}
+
+export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
+  const params = useParams<{ id: string }>();
+  const id = propId ?? params.id ?? "new";
   const isEdit = id !== "new";
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
@@ -37,9 +42,12 @@ export default function QuizEditor() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sensitivityFilter, setSensitivityFilter] = useState("");
 
+  const numericId = isEdit ? Number(id) : 0;
+  const validId = isEdit && !isNaN(numericId) && numericId > 0;
+
   const { data: existingQuiz } = trpc.quizzes.get.useQuery(
-    { id: Number(id) },
-    { enabled: isEdit && isAuthenticated }
+    { id: numericId },
+    { enabled: validId && isAuthenticated }
   );
 
   const { data: questions } = trpc.questions.list.useQuery(
@@ -74,7 +82,7 @@ export default function QuizEditor() {
     if (!title.trim()) { toast.error("O título é obrigatório."); return; }
     if (selectedIds.length === 0) { toast.error("Seleciona pelo menos uma pergunta."); return; }
     const payload = { title, description, literaryWork, discipline, yearGroup, className, showResultsImmediately, questionIds: selectedIds };
-    if (isEdit) updateQuiz.mutate({ id: Number(id), ...payload });
+    if (isEdit) updateQuiz.mutate({ id: numericId, ...payload });
     else createQuiz.mutate(payload);
   };
 

@@ -130,7 +130,7 @@ export const appRouter = router({
     create: protectedProcedure
       .input(
         z.object({
-          title: z.string().min(3),
+          title: z.string().min(1),
           description: z.string().optional(),
           literaryWork: z.string().optional(),
           discipline: z.string().optional(),
@@ -153,7 +153,7 @@ export const appRouter = router({
       .input(
         z.object({
           id: z.number(),
-          title: z.string().min(3).optional(),
+          title: z.string().min(1).optional(),
           description: z.string().optional(),
           literaryWork: z.string().optional(),
           discipline: z.string().optional(),

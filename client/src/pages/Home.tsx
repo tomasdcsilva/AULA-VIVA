@@ -99,13 +99,13 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap gap-3">
               {isAuthenticated ? (
-                <Link href="/dashboard" className="av-btn-primary flex items-center gap-2">
-                  Ir para o Painel <ChevronRight className="w-4 h-4" />
+                <Link href="/quiz/new" className="av-btn-primary flex items-center gap-2">
+                  Criar Quiz <ChevronRight className="w-4 h-4" />
                 </Link>
               ) : (
-                <a href={getLoginUrl()} className="av-btn-primary flex items-center gap-2">
+                <Link href="/login" className="av-btn-primary flex items-center gap-2">
                   Entrar como Professor <ChevronRight className="w-4 h-4" />
-                </a>
+                </Link>
               )}
               <Link href="/join" className="bg-white/10 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/20 transition-colors flex items-center gap-2">
                 Entrar com Código de Sessão
