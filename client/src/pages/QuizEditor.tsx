@@ -41,6 +41,8 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sensitivityFilter, setSensitivityFilter] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
+  const [savedOnce, setSavedOnce] = useState(false);
 
   const numericId = isEdit ? Number(id) : 0;
   const validId = isEdit && !isNaN(numericId) && numericId > 0;
@@ -78,10 +80,28 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
     onError: (e) => toast.error(e.message),
   });
 
+  // Marcar como alterado quando qualquer campo muda
+  useEffect(() => {
+    if (existingQuiz || !isEdit) setIsDirty(true);
+  }, [title, description, literaryWork, discipline, yearGroup, className, showResultsImmediately, selectedIds]);
+
+  // Aviso ao tentar sair com alterações não guardadas
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty && !savedOnce) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty, savedOnce]);
+
   const handleSave = () => {
     if (!title.trim()) { toast.error("O título é obrigatório."); return; }
     if (selectedIds.length === 0) { toast.error("Seleciona pelo menos uma pergunta."); return; }
     const payload = { title, description, literaryWork, discipline, yearGroup, className, showResultsImmediately, questionIds: selectedIds };
+    setSavedOnce(true);
     if (isEdit) updateQuiz.mutate({ id: numericId, ...payload });
     else createQuiz.mutate(payload);
   };
@@ -95,9 +115,17 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   return (
     <div className="av-section animate-fade-in">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/dashboard" className="text-muted-foreground hover:text-navy transition-colors">
+        <button
+          onClick={() => {
+            if (isDirty && !savedOnce && (title || selectedIds.length > 0)) {
+              if (!window.confirm("Tens alterações não guardadas. Tens a certeza que queres sair?")) return;
+            }
+            navigate("/dashboard");
+          }}
+          className="text-muted-foreground hover:text-navy transition-colors"
+        >
           <ArrowLeft className="w-5 h-5" />
-        </Link>
+        </button>
         <div>
           <h1 className="av-section-title">{isEdit ? "Editar Quiz" : "Novo Quiz"}</h1>
           <p className="av-section-subtitle">Configura o quiz e seleciona as perguntas do banco validado.</p>

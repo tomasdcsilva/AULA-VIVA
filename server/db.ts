@@ -78,19 +78,55 @@ export async function getQuestions(filters?: {
   category?: string;
   sensitivityLevel?: string;
   discipline?: string;
+  educationLevel?: string;
+  approvedOnly?: boolean;
 }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
+  if (filters?.approvedOnly !== false) {
+    // Por defeito só mostra perguntas aprovadas (isValidated=true ou isApproved=true)
+    conditions.push(eq(questions.isValidated, true));
+  }
   if (filters?.category) conditions.push(eq(questions.category, filters.category as any));
   if (filters?.sensitivityLevel)
     conditions.push(eq(questions.sensitivityLevel, filters.sensitivityLevel as any));
   if (filters?.discipline) conditions.push(eq(questions.discipline, filters.discipline));
+  if (filters?.educationLevel && filters.educationLevel !== "all")
+    conditions.push(eq(questions.educationLevel, filters.educationLevel as any));
   const rows =
     conditions.length > 0
       ? await db.select().from(questions).where(and(...conditions)).orderBy(desc(questions.createdAt))
       : await db.select().from(questions).orderBy(desc(questions.createdAt));
   return rows;
+}
+
+export async function getPendingQuestions() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(questions)
+    .where(and(eq(questions.isValidated, false), eq(questions.isApproved, false)))
+    .orderBy(desc(questions.createdAt));
+}
+
+export async function approveQuestion(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(questions).set({ isValidated: true, isApproved: true }).where(eq(questions.id, id));
+}
+
+export async function rejectQuestion(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.delete(questions).where(eq(questions.id, id));
+}
+
+export async function updateQuestion(id: number, data: Partial<InsertQuestion>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(questions).set(data).where(eq(questions.id, id));
 }
 
 export async function createQuestion(data: InsertQuestion) {

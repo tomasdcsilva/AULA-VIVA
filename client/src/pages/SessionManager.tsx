@@ -3,7 +3,7 @@ import PedagogicBox from "@/components/PedagogicBox";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft, Play, Square, MessageCircle, PauseCircle, PlayCircle,
-  Eye, EyeOff, Flag, Star, BarChart3, FileText, Copy, Users
+  Eye, EyeOff, Flag, Star, BarChart3, FileText, Copy, Users, Monitor
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useParams } from "wouter";
@@ -98,14 +98,26 @@ export default function SessionManager() {
 
   return (
     <div className="av-section animate-fade-in">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/dashboard" className="text-muted-foreground hover:text-navy transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="av-section-title">Gerir Sessão</h1>
-          <p className="av-section-subtitle">{quiz?.title ?? "Carregando..."}</p>
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="text-muted-foreground hover:text-navy transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="av-section-title">Gerir Sessão</h1>
+            <p className="av-section-subtitle">{quiz?.title ?? "Carregando..."}</p>
+          </div>
         </div>
+        <a
+          href={`/projection/${sessionId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-navy text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-navy/80 transition-colors"
+          title="Abrir vista de projeção para o quadro"
+        >
+          <Monitor className="w-4 h-4" />
+          Vista de Projeção
+        </a>
       </div>
 
       <PedagogicBox title="Gestão da Sessão de Aula">
@@ -363,19 +375,51 @@ export default function SessionManager() {
 
             <button
               onClick={() => {
-                const content = JSON.stringify(report, null, 2);
-                const blob = new Blob([content], { type: "application/json" });
+                const date = new Date().toLocaleDateString("pt-PT");
+                const statsHtml = report.questionStats.map((qs, i) => {
+                  const bars = qs.stats.map(s =>
+                    `<div style="margin:4px 0;">
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="min-width:180px;font-size:13px;">${s.answer}</span>
+                        <div style="flex:1;background:#e5e7eb;border-radius:4px;height:18px;">
+                          <div style="width:${s.percentage}%;background:#0d9488;height:18px;border-radius:4px;"></div>
+                        </div>
+                        <span style="font-size:13px;font-weight:600;min-width:40px;">${s.percentage}%</span>
+                      </div>
+                    </div>`
+                  ).join("");
+                  return `<div style="margin-bottom:20px;padding:16px;border:1px solid #e5e7eb;border-radius:8px;">
+                    <p style="font-weight:600;margin:0 0 8px;">${i+1}. ${qs.question}</p>
+                    ${bars || "<p style='color:#6b7280;font-size:13px;'>Sem respostas registadas.</p>"}
+                  </div>`;
+                }).join("");
+                const chatHtml = report.chatSummary.highlightedMessages.length > 0
+                  ? `<div style="margin-top:16px;"><h3 style="font-size:15px;">Mensagens Destacadas</h3>${report.chatSummary.highlightedMessages.map(m => `<p style="background:#f0fdfa;border-left:3px solid #0d9488;padding:8px 12px;margin:6px 0;font-size:13px;">${m}</p>`).join("")}</div>`
+                  : "";
+                const suggestionsHtml = report.suggestions.map(s => `<li style="margin:6px 0;font-size:13px;">${s}</li>`).join("");
+                const html = `<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><title>Relatório Pedagógico — ${report.quizTitle}</title>
+                <style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;color:#1e293b;padding:0 20px;}h1{color:#0d9488;}h2{color:#1e293b;font-size:17px;margin-top:24px;}table{width:100%;border-collapse:collapse;margin:12px 0;}td,th{padding:8px 12px;border:1px solid #e5e7eb;font-size:13px;}th{background:#f8f5f0;}.footer{margin-top:40px;font-size:11px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:12px;}</style></head>
+                <body>
+                <h1>📋 Relatório Pedagógico — Aula Viva</h1>
+                <table><tr><th>Quiz</th><td>${report.quizTitle}</td><th>Código</th><td>${report.sessionCode}</td></tr>
+                <tr><th>Turma</th><td>${report.className || "—"}</td><th>Disciplina</th><td>${report.discipline || "—"}</td></tr>
+                <tr><th>Obra Literária</th><td>${report.literaryWork || "—"}</td><th>Data</th><td>${date}</td></tr>
+                <tr><th>Participantes</th><td>${report.totalParticipants}</td><th>Mensagens no Chat</th><td>${report.chatSummary.totalMessages}</td></tr></table>
+                ${report.chatSummary.sensitiveCount > 0 ? `<p style="background:#fef3c7;border:1px solid #f59e0b;padding:10px;border-radius:6px;font-size:13px;">⚠️ Foram detetadas ${report.chatSummary.sensitiveCount} mensagem(ns) com conteúdo potencialmente sensível. Considera acompanhamento individualizado.</p>` : ""}
+                <h2>Resultados por Pergunta</h2>${statsHtml}
+                ${chatHtml}
+                <h2>Sugestões para a Próxima Aula</h2><ul>${suggestionsHtml}</ul>
+                <div class="footer">Gerado em ${date} · Aula Viva · Projeto PesqueirAmiga · Master HBM Research, LDA<br>Este relatório não contém dados que permitam identificar alunos individualmente.</div>
+                </body></html>`;
+                const blob = new Blob([html], { type: "text/html" });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `relatorio_${report.sessionCode}_${new Date().toISOString().slice(0, 10)}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                toast.success("Relatório exportado!");
+                const win = window.open(url, "_blank");
+                if (win) { win.onload = () => { win.print(); }; }
+                toast.success("Relatório aberto para impressão/PDF!");
               }}
-              className="av-btn-secondary flex items-center gap-2"
+              className="av-btn-primary flex items-center gap-2"
             >
-              <FileText className="w-4 h-4" /> Exportar Relatório
+              <FileText className="w-4 h-4" /> Exportar como PDF
             </button>
           </div>
         )}

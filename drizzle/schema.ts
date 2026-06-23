@@ -35,6 +35,11 @@ export const questions = mysqlTable("questions", {
     "consent",
     "psychological_violence",
     "healthy_relationships",
+    "jealousy",
+    "peer_pressure",
+    "social_media",
+    "masculinities",
+    "emotional_dependency",
   ]).notNull(),
   sensitivityLevel: mysqlEnum("sensitivityLevel", ["low", "medium", "high"])
     .default("low")
@@ -44,7 +49,10 @@ export const questions = mysqlTable("questions", {
   discipline: varchar("discipline", { length: 128 }),
   yearGroup: varchar("yearGroup", { length: 32 }),
   literaryWork: varchar("literaryWork", { length: 256 }),
+  educationLevel: mysqlEnum("educationLevel", ["2nd_cycle", "3rd_cycle", "secondary", "all"]).default("all").notNull(),
   isValidated: boolean("isValidated").default(false).notNull(),
+  isApproved: boolean("isApproved").default(false).notNull(),
+  submittedBy: int("submittedBy"), // userId do professor que submeteu
   createdBy: int("createdBy"), // userId
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

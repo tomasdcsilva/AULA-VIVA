@@ -6,6 +6,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
+  approveQuestion,
   createQuestion,
   createQuiz,
   createSession,
@@ -18,6 +19,7 @@ import {
   getKahootLeaderboard,
   getKahootQuestionStats,
   getKahootState,
+  getPendingQuestions,
   getQuestions,
   getQuizById,
   getQuizzesByTeacher,
@@ -30,9 +32,11 @@ import {
   kahootCloseQuestion,
   kahootNextQuestion,
   moderateMessage,
+  rejectQuestion,
   saveChatMessage,
   saveKahootResponse,
   saveResponse,
+  updateQuestion,
   updateQuiz,
   updateSession,
 } from "./db";
@@ -79,14 +83,60 @@ export const appRouter = router({
           category: z.string().optional(),
           sensitivityLevel: z.string().optional(),
           discipline: z.string().optional(),
+          educationLevel: z.string().optional(),
+          approvedOnly: z.boolean().optional(),
         }).optional()
       )
       .query(({ input }) => getQuestions(input)),
 
+    // Perguntas pendentes de aprovação (admin)
+    pending: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        return getPendingQuestions();
+      }),
+
+    // Aprovar pergunta (admin)
+    approve: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        await approveQuestion(input.id);
+        return { success: true };
+      }),
+
+    // Rejeitar/eliminar pergunta (admin)
+    reject: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        await rejectQuestion(input.id);
+        return { success: true };
+      }),
+
+    // Atualizar pergunta (admin)
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          text: z.string().min(1).optional(),
+          correctOption: z.number().nullable().optional(),
+          educationLevel: z.enum(["2nd_cycle", "3rd_cycle", "secondary", "all"]).optional(),
+          sensitivityLevel: z.enum(["low", "medium", "high"]).optional(),
+          category: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const { id, ...data } = input;
+        await updateQuestion(id, data as any);
+        return { success: true };
+      }),
+
     create: protectedProcedure
       .input(
         z.object({
-          text: z.string().min(5),
+          text: z.string().min(1),
           type: z.enum(["multiple_choice", "scale", "open"]),
           category: z.enum([
             "stereotypes",
@@ -94,22 +144,33 @@ export const appRouter = router({
             "consent",
             "psychological_violence",
             "healthy_relationships",
+            "jealousy",
+            "peer_pressure",
+            "social_media",
+            "masculinities",
+            "emotional_dependency",
           ]),
           sensitivityLevel: z.enum(["low", "medium", "high"]).default("low"),
+          educationLevel: z.enum(["2nd_cycle", "3rd_cycle", "secondary", "all"]).default("all"),
           options: z.array(z.string()).optional(),
+          correctOption: z.number().nullable().optional(),
           discipline: z.string().optional(),
           yearGroup: z.string().optional(),
           literaryWork: z.string().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
+        const isAdmin = ctx.user.role === "admin";
         await createQuestion({
           ...input,
           options: input.options ? JSON.stringify(input.options) : undefined,
-          isValidated: ctx.user.role === "admin",
+          correctOption: input.correctOption ?? undefined,
+          isValidated: isAdmin,
+          isApproved: isAdmin,
+          submittedBy: isAdmin ? undefined : ctx.user.id,
           createdBy: ctx.user.id,
         });
-        return { success: true };
+        return { success: true, pending: !isAdmin };
       }),
   }),
 

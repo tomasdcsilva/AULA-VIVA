@@ -74,3 +74,21 @@
 - [x] Ecrã de placar final anónimo com pódio
 - [x] Integrar modo Kahoot no fluxo de criação de quiz (botão "Jogo" no Dashboard)
 - [x] Redirecionamento automático no JoinSession quando mode=kahoot
+
+## Funcionalidades Cruciais em Falta
+
+- [ ] Adicionar campo `educationLevel` (2º ciclo, 3º ciclo, secundário) à tabela questions
+- [ ] Adicionar campo `correctOption` à tabela questions para resposta correta
+- [ ] Adicionar campo `isApproved` e `submittedBy` à tabela questions para fluxo de aprovação
+- [ ] Migrar schema para a base de dados
+- [ ] Expandir categorias temáticas: ciúme, pressão do grupo, redes sociais, masculinidades, dependência emocional
+- [ ] Adicionar filtro por nível de ensino no banco de perguntas e no QuizEditor
+- [ ] Adicionar 30+ perguntas novas cobrindo as categorias em falta e os 3 níveis de ensino
+- [ ] Professores podem submeter perguntas para aprovação
+- [ ] Coordenador/admin vê lista de perguntas pendentes e aprova/rejeita
+- [ ] Resposta correta visível no editor de perguntas
+- [ ] Modo Jogo usa resposta correta para calcular pontuação real
+- [ ] Exportação de relatório pedagógico em PDF formatado
+- [ ] Histórico de sessões no painel do professor (data, turma, nº participantes)
+- [ ] Vista de projeção fullscreen para sala de aula (pergunta + temporizador em grande)
+- [ ] Confirmação antes de sair do QuizEditor sem guardar

@@ -17,6 +17,7 @@ import Coordination from "./pages/Coordination";
 import KahootHost from "./pages/KahootHost";
 import KahootPlayer from "./pages/KahootPlayer";
 import Login from "./pages/Login";
+import ProjectionView from "./pages/ProjectionView";
 
 function Router() {
   return (
@@ -31,6 +32,9 @@ function Router() {
       {/* Rotas Kahoot (ecrã completo, sem navbar) */}
       <Route path="/kahoot/host/:id" component={KahootHost} />
       <Route path="/kahoot/play/:id" component={KahootPlayer} />
+
+      {/* Vista de projeção (ecrã completo, sem navbar) */}
+      <Route path="/projection/:id" component={ProjectionView} />
 
       {/* Rotas com layout */}
       <Route path="/" component={() => <Layout><Home /></Layout>} />
