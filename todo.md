@@ -77,18 +77,18 @@
 
 ## Funcionalidades Cruciais em Falta
 
-- [ ] Adicionar campo `educationLevel` (2º ciclo, 3º ciclo, secundário) à tabela questions
-- [ ] Adicionar campo `correctOption` à tabela questions para resposta correta
-- [ ] Adicionar campo `isApproved` e `submittedBy` à tabela questions para fluxo de aprovação
-- [ ] Migrar schema para a base de dados
-- [ ] Expandir categorias temáticas: ciúme, pressão do grupo, redes sociais, masculinidades, dependência emocional
-- [ ] Adicionar filtro por nível de ensino no banco de perguntas e no QuizEditor
-- [ ] Adicionar 30+ perguntas novas cobrindo as categorias em falta e os 3 níveis de ensino
-- [ ] Professores podem submeter perguntas para aprovação
-- [ ] Coordenador/admin vê lista de perguntas pendentes e aprova/rejeita
-- [ ] Resposta correta visível no editor de perguntas
-- [ ] Modo Jogo usa resposta correta para calcular pontuação real
-- [ ] Exportação de relatório pedagógico em PDF formatado
-- [ ] Histórico de sessões no painel do professor (data, turma, nº participantes)
-- [ ] Vista de projeção fullscreen para sala de aula (pergunta + temporizador em grande)
-- [ ] Confirmação antes de sair do QuizEditor sem guardar
+- [x] Adicionar campo `educationLevel` (2º ciclo, 3º ciclo, secundário) à tabela questions
+- [x] Adicionar campo `correctOption` à tabela questions para resposta correta
+- [x] Adicionar campo `isApproved` e `submittedBy` à tabela questions para fluxo de aprovação
+- [x] Migrar schema para a base de dados
+- [x] Expandir categorias temáticas: ciúmes, pressão do grupo, redes sociais, masculinidades, dependência emocional
+- [x] Adicionar filtro por nível de ensino no banco de perguntas e no QuizEditor
+- [x] Adicionar 30+ perguntas novas cobrindo as categorias em falta e os 3 níveis de ensino
+- [x] Professores podem submeter perguntas para aprovação
+- [x] Coordenador/admin vê lista de perguntas pendentes e aprova/rejeita
+- [x] Resposta correta visível no editor de perguntas
+- [x] Modo Jogo usa resposta correta para calcular pontuação real
+- [x] Exportação de relatório pedagógico em PDF formatado
+- [x] Histórico de sessões no painel do professor (data, turma, nº participantes)
+- [x] Vista de projeção fullscreen para sala de aula (pergunta + temporizador em grande)
+- [x] Confirmação antes de sair do QuizEditor sem guardar

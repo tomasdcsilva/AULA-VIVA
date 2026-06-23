@@ -27,6 +27,8 @@ export default function ProjectionView() {
   const [activeQuestionId, setActiveQuestionId] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [questionTimer, setQuestionTimer] = useState<number | null>(null);
+  const [questionDuration, setQuestionDuration] = useState<number | null>(null);
 
   const { data: session } = trpc.sessions.get.useQuery(
     { id: sessionId },
@@ -48,11 +50,31 @@ export default function ProjectionView() {
     { enabled: !!activeQuestionId, refetchInterval: 2000 }
   );
 
-  // Cronómetro
+  // Cronómetro geral da sessão
   useEffect(() => {
     const interval = setInterval(() => setElapsed(e => e + 1), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Temporizador de contagem decrescente da pergunta ativa
+  useEffect(() => {
+    if (!activeQuestionId) {
+      setQuestionTimer(null);
+      setQuestionDuration(null);
+      return;
+    }
+    // Inicia temporizador de 60 segundos ao selecionar uma pergunta
+    const duration = 60;
+    setQuestionDuration(duration);
+    setQuestionTimer(duration);
+    const interval = setInterval(() => {
+      setQuestionTimer(prev => {
+        if (prev === null || prev <= 0) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeQuestionId]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -198,6 +220,36 @@ export default function ProjectionView() {
                 <p className="text-white/50 text-sm uppercase tracking-widest mb-3">Pergunta</p>
                 <h2 className="text-3xl font-bold text-white leading-tight">{activeQuestion.text}</h2>
               </div>
+
+              {/* Temporizador da pergunta */}
+              {questionTimer !== null && questionDuration !== null && (
+                <div className="flex items-center justify-center gap-6 mb-8">
+                  <div className="relative w-28 h-28">
+                    <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                      <circle
+                        cx="50" cy="50" r="42" fill="none"
+                        stroke={questionTimer > 15 ? "oklch(52% 0.13 185)" : questionTimer > 5 ? "oklch(78% 0.14 80)" : "oklch(55% 0.22 25)"}
+                        strokeWidth="8"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 42}`}
+                        strokeDashoffset={`${2 * Math.PI * 42 * (1 - questionTimer / questionDuration)}`}
+                        style={{ transition: "stroke-dashoffset 1s linear, stroke 0.5s" }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className={`text-3xl font-bold font-mono ${
+                        questionTimer > 15 ? "text-white" : questionTimer > 5 ? "text-yellow-300" : "text-red-400 animate-pulse"
+                      }`}>{questionTimer}</span>
+                      <span className="text-white/40 text-xs">seg</span>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white/50 text-sm">Respostas recebidas</p>
+                    <p className="text-4xl font-bold text-gold">{totalVotes}</p>
+                  </div>
+                </div>
+              )}
 
               {/* Gráfico */}
               {chartData.length > 0 ? (

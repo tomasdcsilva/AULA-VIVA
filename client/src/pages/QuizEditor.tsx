@@ -41,8 +41,10 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sensitivityFilter, setSensitivityFilter] = useState("");
+  const [educationLevelFilter, setEducationLevelFilter] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const numericId = isEdit ? Number(id) : 0;
   const validId = isEdit && !isNaN(numericId) && numericId > 0;
@@ -53,12 +55,13 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   );
 
   const { data: questions } = trpc.questions.list.useQuery(
-    { category: categoryFilter || undefined, sensitivityLevel: sensitivityFilter || undefined },
+    { category: categoryFilter || undefined, sensitivityLevel: sensitivityFilter || undefined, educationLevel: educationLevelFilter || undefined },
     { enabled: isAuthenticated }
   );
 
   useEffect(() => {
     if (existingQuiz) {
+      setDataLoaded(false);
       setTitle(existingQuiz.title);
       setDescription(existingQuiz.description ?? "");
       setLiteraryWork(existingQuiz.literaryWork ?? "");
@@ -67,6 +70,9 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
       setClassName(existingQuiz.className ?? "");
       setShowResultsImmediately(existingQuiz.showResultsImmediately);
       setSelectedIds(JSON.parse(existingQuiz.questionIds ?? "[]"));
+      setTimeout(() => setDataLoaded(true), 100);
+    } else if (!isEdit) {
+      setDataLoaded(true);
     }
   }, [existingQuiz]);
 
@@ -80,9 +86,9 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
     onError: (e) => toast.error(e.message),
   });
 
-  // Marcar como alterado quando qualquer campo muda
+  // Marcar como alterado apenas após os dados terem sido carregados (evita falso dirty ao carregar)
   useEffect(() => {
-    if (existingQuiz || !isEdit) setIsDirty(true);
+    if (dataLoaded) setIsDirty(true);
   }, [title, description, literaryWork, discipline, yearGroup, className, showResultsImmediately, selectedIds]);
 
   // Aviso ao tentar sair com alterações não guardadas
@@ -248,6 +254,16 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
               {Object.entries(CATEGORIES).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
+            </select>
+            <select
+              className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal"
+              value={educationLevelFilter}
+              onChange={(e) => setEducationLevelFilter(e.target.value)}
+            >
+              <option value="">Todos os níveis</option>
+              <option value="2nd_cycle">2.º Ciclo (5.º-6.º ano)</option>
+              <option value="3rd_cycle">3.º Ciclo (7.º-9.º ano)</option>
+              <option value="secondary">Ensino Secundário (10.º-12.º ano)</option>
             </select>
             <select
               className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal"
