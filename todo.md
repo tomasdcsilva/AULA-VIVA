@@ -94,19 +94,19 @@
 - [x] Confirmação antes de sair do QuizEditor sem guardar
 
 ## Sistema de Autenticação Própria (Email + Password)
-- [ ] Schema: adicionar campos passwordHash, emailVerified, verificationToken, resetToken, resetTokenExpiresAt à tabela users
-- [ ] Migrar schema para a base de dados
-- [ ] Backend: auth.register (registo com email + password)
-- [ ] Backend: auth.login (login com email + password, gera JWT próprio)
-- [ ] Backend: auth.verifyEmail (verificar token de email)
-- [ ] Backend: auth.forgotPassword (enviar email de recuperação)
-- [ ] Backend: auth.resetPassword (redefinir password com token)
-- [ ] Integrar envio de email via Resend API
-- [ ] Página de registo (/register) com design Aula Viva
-- [ ] Página de login (/login) com design Aula Viva
-- [ ] Página de verificação de email (/verify-email)
-- [ ] Página de recuperação de password (/forgot-password)
-- [ ] Página de redefinição de password (/reset-password)
-- [ ] Atualizar useAuth hook para usar JWT próprio em vez de OAuth Manus
-- [ ] Atualizar todas as páginas que usam getLoginUrl() para usar /login
-- [ ] Testes vitest para os novos routers de autenticação
+- [x] Schema: adicionar campos passwordHash, emailVerified, verificationToken, resetToken, resetTokenExpiresAt à tabela users
+- [x] Migrar schema para a base de dados
+- [x] Backend: auth.register (registo com email + password)
+- [x] Backend: auth.login (login com email + password, gera JWT próprio)
+- [x] Backend: auth.verifyEmail (verificar token de email)
+- [x] Backend: auth.forgotPassword (enviar email de recuperação)
+- [x] Backend: auth.resetPassword (redefinir password com token)
+- [x] Integrar envio de email via Resend API
+- [x] Página de registo (/register) com design Aula Viva
+- [x] Página de login (/login) com design Aula Viva
+- [x] Página de verificação de email (/verify-email)
+- [x] Página de recuperação de password (/forgot-password)
+- [x] Página de redefinição de password (/reset-password)
+- [x] Atualizar useAuth hook para usar JWT próprio em vez de OAuth Manus
+- [x] Atualizar todas as páginas que usam getLoginUrl() para usar /login
+- [x] Testes vitest para os novos routers de autenticação

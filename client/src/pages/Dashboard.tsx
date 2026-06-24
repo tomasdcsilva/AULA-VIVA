@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import PedagogicBox from "@/components/PedagogicBox";
 import { trpc } from "@/lib/trpc";
 import { BookOpen, Plus, Play, Clock, CheckCircle, Trash2, Copy, Gamepad2 } from "lucide-react";
@@ -51,7 +50,7 @@ export default function Dashboard() {
       <BookOpen className="w-12 h-12 text-teal mx-auto mb-4" />
       <h2 className="text-2xl font-display font-bold text-navy mb-2">Área do Professor</h2>
       <p className="text-muted-foreground mb-6">Inicia sessão para aceder ao painel e criar quizzes.</p>
-      <a href={getLoginUrl()} className="av-btn-primary">Entrar como Professor</a>
+      <a href="/login" className="av-btn-primary">Entrar como Professor</a>
     </div>
   );
 
