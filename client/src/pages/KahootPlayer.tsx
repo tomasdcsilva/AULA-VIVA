@@ -9,6 +9,8 @@ const OPTION_COLORS = [
   { bg: "bg-[#1368ce] hover:bg-[#0f55b0] active:bg-[#0c4490]", icon: "◆", label: "B" },
   { bg: "bg-[#d89e00] hover:bg-[#b88500] active:bg-[#9a6f00]", icon: "●", label: "C" },
   { bg: "bg-[#26890c] hover:bg-[#1e6e09] active:bg-[#175607]", icon: "■", label: "D" },
+  { bg: "bg-[#7c3aed] hover:bg-[#6d28d9] active:bg-[#5b21b6]", icon: "★", label: "E" },
+  { bg: "bg-[#0891b2] hover:bg-[#0e7490] active:bg-[#155e75]", icon: "♦", label: "F" },
 ];
 
 type GamePhase = "waiting" | "question" | "answered" | "results" | "leaderboard" | "finished";
@@ -184,16 +186,19 @@ export default function KahootPlayer() {
 
           {/* Botões de resposta */}
           <div className="grid grid-cols-2 gap-3">
-            {(activeQuestion?.options ?? ["A", "B", "C", "D"]).map((opt, i) => (
+            {(activeQuestion?.options ?? ["A", "B", "C", "D"]).map((opt, i) => {
+              const color = OPTION_COLORS[i % OPTION_COLORS.length];
+              return (
               <button
                 key={i}
                 onClick={() => handleAnswer(i)}
-                className={`${OPTION_COLORS[i].bg} text-white rounded-2xl p-4 flex flex-col items-center justify-center gap-1 font-bold transition-all active:scale-95 shadow-lg min-h-[90px]`}
+                className={`${color.bg} text-white rounded-2xl p-4 flex flex-col items-center justify-center gap-1 font-bold transition-all active:scale-95 shadow-lg min-h-[90px]`}
               >
-                <span className="text-2xl">{OPTION_COLORS[i].icon}</span>
-                <span className="text-xs text-center leading-tight">{typeof opt === "string" ? opt : OPTION_COLORS[i].label}</span>
+                <span className="text-2xl">{color.icon}</span>
+                <span className="text-xs text-center leading-tight">{typeof opt === "string" ? opt : color.label}</span>
               </button>
-            ))}
+            );
+            })}
           </div>
         </div>
       )}
@@ -205,8 +210,8 @@ export default function KahootPlayer() {
           <h2 className="text-2xl font-display font-bold mb-2">Resposta enviada!</h2>
           <p className="text-white/60">A aguardar que o professor encerre a pergunta...</p>
           {myAnswer !== null && (
-            <div className={`mt-6 w-20 h-20 rounded-2xl ${OPTION_COLORS[Number(myAnswer) % 4].bg} flex items-center justify-center mx-auto`}>
-              <span className="text-3xl font-black">{OPTION_COLORS[Number(myAnswer) % 4].label}</span>
+            <div className={`mt-6 w-20 h-20 rounded-2xl ${OPTION_COLORS[Number(myAnswer) % OPTION_COLORS.length].bg} flex items-center justify-center mx-auto`}>
+              <span className="text-3xl font-black">{OPTION_COLORS[Number(myAnswer) % OPTION_COLORS.length].label}</span>
             </div>
           )}
         </div>

@@ -21,6 +21,8 @@ const OPTION_COLORS = [
   { bg: "bg-[#1368ce]", text: "text-white", label: "B" },
   { bg: "bg-[#d89e00]", text: "text-white", label: "C" },
   { bg: "bg-[#26890c]", text: "text-white", label: "D" },
+  { bg: "bg-[#7c3aed]", text: "text-white", label: "E" },
+  { bg: "bg-[#0891b2]", text: "text-white", label: "F" },
 ];
 
 export default function KahootHost() {

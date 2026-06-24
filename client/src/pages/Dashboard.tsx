@@ -72,9 +72,10 @@ export default function Dashboard() {
 
       {/* Explicação pedagógica */}
       <PedagogicBox title="Como funciona o Painel do Professor">
-        Aqui podes criar quizzes associados a obras literárias, lançar sessões de aula com um código temporário
-        e acompanhar os resultados em tempo real. Cada sessão gera um código único que os alunos usam para
-        participar anonimamente — sem criar conta nem revelar a identidade.
+        Aqui podes criar quizzes e lançá-los em aula. <strong>Lançar Sessão</strong> cria uma sessão de votação anónima:
+        aparece um código de 6 letras que os alunos introduzem em <em>aulaviva.manus.space/join</em> no telemóvel
+        para responder sem criar conta. <strong>Jogo</strong> lança o mesmo quiz em modo Kahoot competitivo.
+        Depois de criar uma sessão, clica em <strong>Gerir</strong> para controlar o fluxo e ver os resultados em tempo real.
       </PedagogicBox>
 
       {/* Sessões ativas */}
@@ -155,9 +156,10 @@ export default function Dashboard() {
                   <button
                     onClick={() => createSession.mutate({ quizId: q.id })}
                     disabled={createSession.isPending}
+                    title="Lança uma sessão de aula: os alunos entram com um código e respondem anonimamente pelo telemóvel"
                     className="flex-1 av-btn-primary text-sm py-2 flex items-center justify-center gap-1"
                   >
-                    <Play className="w-3 h-3" /> Sessão
+                    <Play className="w-3 h-3" /> Lançar Sessão
                   </button>
                   <button
                     onClick={() => handleLaunchKahoot(q.id)}
