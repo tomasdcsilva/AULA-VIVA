@@ -5,12 +5,12 @@ import { useParams } from "wouter";
 import { toast } from "sonner";
 
 const OPTION_COLORS = [
-  { bg: "bg-[#e21b3c] hover:bg-[#c01532] active:bg-[#a01228]", icon: "▲", label: "A" },
-  { bg: "bg-[#1368ce] hover:bg-[#0f55b0] active:bg-[#0c4490]", icon: "◆", label: "B" },
-  { bg: "bg-[#d89e00] hover:bg-[#b88500] active:bg-[#9a6f00]", icon: "●", label: "C" },
-  { bg: "bg-[#26890c] hover:bg-[#1e6e09] active:bg-[#175607]", icon: "■", label: "D" },
-  { bg: "bg-[#7c3aed] hover:bg-[#6d28d9] active:bg-[#5b21b6]", icon: "★", label: "E" },
-  { bg: "bg-[#0891b2] hover:bg-[#0e7490] active:bg-[#155e75]", icon: "♦", label: "F" },
+  { bg: "bg-[#e21b3c] hover:bg-[#c01532] active:bg-[#a01228]", hex: "#e21b3c" },
+  { bg: "bg-[#1368ce] hover:bg-[#0f55b0] active:bg-[#0c4490]", hex: "#1368ce" },
+  { bg: "bg-[#d89e00] hover:bg-[#b88500] active:bg-[#9a6f00]", hex: "#d89e00" },
+  { bg: "bg-[#26890c] hover:bg-[#1e6e09] active:bg-[#175607]", hex: "#26890c" },
+  { bg: "bg-[#7c3aed] hover:bg-[#6d28d9] active:bg-[#5b21b6]", hex: "#7c3aed" },
+  { bg: "bg-[#0891b2] hover:bg-[#0e7490] active:bg-[#155e75]", hex: "#0891b2" },
 ];
 
 type GamePhase = "waiting" | "question" | "answered" | "results" | "leaderboard" | "finished";
@@ -192,11 +192,9 @@ export default function KahootPlayer() {
               <button
                 key={i}
                 onClick={() => handleAnswer(i)}
-                className={`${color.bg} text-white rounded-2xl p-4 flex flex-col items-center justify-center gap-1 font-bold transition-all active:scale-95 shadow-lg min-h-[90px]`}
-              >
-                <span className="text-2xl">{color.icon}</span>
-                <span className="text-xs text-center leading-tight">{typeof opt === "string" ? opt : color.label}</span>
-              </button>
+                className={`${color.bg} rounded-2xl transition-all active:scale-95 shadow-lg min-h-[90px] w-full`}
+                aria-label={`Opção ${i + 1}`}
+              />
             );
             })}
           </div>
@@ -210,9 +208,7 @@ export default function KahootPlayer() {
           <h2 className="text-2xl font-display font-bold mb-2">Resposta enviada!</h2>
           <p className="text-white/60">A aguardar que o professor encerre a pergunta...</p>
           {myAnswer !== null && (
-            <div className={`mt-6 w-20 h-20 rounded-2xl ${OPTION_COLORS[Number(myAnswer) % OPTION_COLORS.length].bg} flex items-center justify-center mx-auto`}>
-              <span className="text-3xl font-black">{OPTION_COLORS[Number(myAnswer) % OPTION_COLORS.length].label}</span>
-            </div>
+            <div className={`mt-6 w-20 h-20 rounded-2xl ${OPTION_COLORS[Number(myAnswer) % OPTION_COLORS.length].bg} mx-auto`} />
           )}
         </div>
       )}

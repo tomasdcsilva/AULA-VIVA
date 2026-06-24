@@ -17,12 +17,12 @@ import { useParams, useLocation } from "wouter";
 import { toast } from "sonner";
 
 const OPTION_COLORS = [
-  { bg: "bg-[#e21b3c]", text: "text-white", label: "A" },
-  { bg: "bg-[#1368ce]", text: "text-white", label: "B" },
-  { bg: "bg-[#d89e00]", text: "text-white", label: "C" },
-  { bg: "bg-[#26890c]", text: "text-white", label: "D" },
-  { bg: "bg-[#7c3aed]", text: "text-white", label: "E" },
-  { bg: "bg-[#0891b2]", text: "text-white", label: "F" },
+  { bg: "bg-[#e21b3c]" },
+  { bg: "bg-[#1368ce]" },
+  { bg: "bg-[#d89e00]" },
+  { bg: "bg-[#26890c]" },
+  { bg: "bg-[#7c3aed]" },
+  { bg: "bg-[#0891b2]" },
 ];
 
 export default function KahootHost() {
@@ -263,12 +263,9 @@ export default function KahootHost() {
                 {(JSON.parse(activeQuestion.options) as string[]).map((opt, i) => (
                   <div
                     key={i}
-                    className={`${OPTION_COLORS[i % 4].bg} rounded-xl p-4 flex items-center gap-3`}
+                    className={`${OPTION_COLORS[i % OPTION_COLORS.length].bg} rounded-xl p-4 flex items-center gap-3`}
                   >
-                    <span className="w-8 h-8 bg-black/20 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0">
-                      {OPTION_COLORS[i % 4].label}
-                    </span>
-                    <span className="font-semibold text-sm">{opt}</span>
+                    <span className="font-semibold text-sm text-white">{opt}</span>
                   </div>
                 ))}
               </div>
@@ -300,9 +297,7 @@ export default function KahootHost() {
                   const isCorrect = activeQuestion.correctOption === i;
                   return (
                     <div key={i} className="flex items-center gap-3">
-                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 ${OPTION_COLORS[i % 4].bg}`}>
-                        {OPTION_COLORS[i % 4].label}
-                      </span>
+                      <span className={`w-8 h-8 rounded-lg flex-shrink-0 ${OPTION_COLORS[i % OPTION_COLORS.length].bg}`} />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm text-white/80">{opt}</span>
@@ -313,7 +308,7 @@ export default function KahootHost() {
                         </div>
                         <div className="h-3 bg-white/10 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all duration-700 ${isCorrect ? "bg-green-400" : OPTION_COLORS[i % 4].bg}`}
+                            className={`h-full rounded-full transition-all duration-700 ${isCorrect ? "bg-green-400" : OPTION_COLORS[i % OPTION_COLORS.length].bg}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
