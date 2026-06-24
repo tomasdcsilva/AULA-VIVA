@@ -108,7 +108,7 @@ export async function registerUser(data: { name: string; email: string; password
     email: data.email,
     loginMethod: "email",
     passwordHash,
-    emailVerified: false,
+    emailVerified: true,
     verificationToken,
     verificationTokenExpiresAt,
     lastSignedIn: new Date(),
@@ -121,7 +121,8 @@ export async function registerUser(data: { name: string; email: string; password
 export async function loginUser(email: string, password: string) {
   const user = await getUserByEmail(email);
   if (!user || !user.passwordHash) throw new Error("INVALID_CREDENTIALS");
-  if (!user.emailVerified) throw new Error("EMAIL_NOT_VERIFIED");
+  // Email verification disabled until domain is configured
+  // if (!user.emailVerified) throw new Error("EMAIL_NOT_VERIFIED");
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw new Error("INVALID_CREDENTIALS");

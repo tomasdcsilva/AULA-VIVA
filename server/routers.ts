@@ -89,7 +89,7 @@ export const appRouter = router({
         try {
           const { user, verificationToken } = await registerUser(input);
           try { await sendVerificationEmail(user.email!, user.name!, verificationToken); } catch (e) { console.error("[Email]", e); }
-          return { success: true, message: "Conta criada! Verifica o teu email para ativar a conta." };
+          return { success: true, message: "Conta criada com sucesso! Podes entrar agora." };
         } catch (e: any) {
           if (e.message === "EMAIL_TAKEN") throw new Error("Este email já está registado.");
           throw e;

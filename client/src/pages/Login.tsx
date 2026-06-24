@@ -12,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
+  const justRegistered = typeof window !== "undefined" && window.location.search.includes("registered=1");
 
   const meQuery = trpc.auth.meWithLocal.useQuery(undefined, { retry: false });
 
@@ -87,6 +88,12 @@ export default function Login() {
 
           <h1 className="text-2xl font-bold mb-1" style={{ color: "var(--color-navy)" }}>Bem-vindo(a) de volta</h1>
           <p className="text-sm mb-8" style={{ color: "#6b7280" }}>Entra na tua conta de professor(a)</p>
+
+          {justRegistered && (
+            <div className="mb-4 p-3 rounded-xl text-sm font-medium" style={{ background: "#d1fae5", color: "#065f46" }}>
+              Conta criada com sucesso! Podes entrar agora.
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

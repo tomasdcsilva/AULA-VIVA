@@ -17,7 +17,7 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
 
   const register = trpc.auth.register.useMutation({
-    onSuccess: () => setSuccess(true),
+    onSuccess: () => navigate("/login?registered=1"),
     onError: (e) => setError(e.message),
   });
 
@@ -29,7 +29,7 @@ export default function Register() {
     register.mutate({ name, email, password });
   };
 
-  if (success) {
+  if (false) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-cream)" }}>
         <div className="w-full max-w-md mx-auto px-6">
@@ -39,8 +39,7 @@ export default function Register() {
             </div>
             <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--color-navy)" }}>Conta criada!</h2>
             <p className="mb-6" style={{ color: "#6b7280" }}>
-              Enviámos um email de confirmação para <strong>{email}</strong>.<br />
-              Verifica a tua caixa de entrada e clica no link para ativar a conta.
+              Conta criada com sucesso! Podes entrar agora.
             </p>
             <Link href="/login">
               <Button className="w-full" style={{ background: "var(--color-teal)", color: "white" }}>
