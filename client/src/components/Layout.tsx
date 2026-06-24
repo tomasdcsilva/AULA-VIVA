@@ -1,6 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
-import { BookOpen, BarChart3, Home, LogOut, Menu, X, Users } from "lucide-react";
+import { BookOpen, BarChart3, Home, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -67,7 +66,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             ) : (
               <a
-                href={getLoginUrl()}
+                href="/login"
                 className="bg-teal text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-teal-dark transition-colors"
               >
                 Entrar como Professor
@@ -108,7 +107,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </button>
             ) : (
               <a
-                href={getLoginUrl()}
+                href="/login"
                 className="block py-3 text-teal font-semibold"
               >
                 Entrar como Professor

@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { BookOpen, MessageCircle, BarChart3, FileText, Shield, Users, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 
@@ -170,7 +169,7 @@ export default function Home() {
                 Ir para o Painel
               </Link>
             ) : (
-              <a href={getLoginUrl()} className="av-btn-primary">
+              <a href="/login" className="av-btn-primary">
                 Entrar como Professor
               </a>
             )}

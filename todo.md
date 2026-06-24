@@ -92,3 +92,21 @@
 - [x] Histórico de sessões no painel do professor (data, turma, nº participantes)
 - [x] Vista de projeção fullscreen para sala de aula (pergunta + temporizador em grande)
 - [x] Confirmação antes de sair do QuizEditor sem guardar
+
+## Sistema de Autenticação Própria (Email + Password)
+- [ ] Schema: adicionar campos passwordHash, emailVerified, verificationToken, resetToken, resetTokenExpiresAt à tabela users
+- [ ] Migrar schema para a base de dados
+- [ ] Backend: auth.register (registo com email + password)
+- [ ] Backend: auth.login (login com email + password, gera JWT próprio)
+- [ ] Backend: auth.verifyEmail (verificar token de email)
+- [ ] Backend: auth.forgotPassword (enviar email de recuperação)
+- [ ] Backend: auth.resetPassword (redefinir password com token)
+- [ ] Integrar envio de email via Resend API
+- [ ] Página de registo (/register) com design Aula Viva
+- [ ] Página de login (/login) com design Aula Viva
+- [ ] Página de verificação de email (/verify-email)
+- [ ] Página de recuperação de password (/forgot-password)
+- [ ] Página de redefinição de password (/reset-password)
+- [ ] Atualizar useAuth hook para usar JWT próprio em vez de OAuth Manus
+- [ ] Atualizar todas as páginas que usam getLoginUrl() para usar /login
+- [ ] Testes vitest para os novos routers de autenticação

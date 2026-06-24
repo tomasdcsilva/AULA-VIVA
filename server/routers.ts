@@ -7,6 +7,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   approveQuestion,
+  createPasswordResetToken,
   createQuestion,
   createQuiz,
   createSession,
@@ -27,19 +28,26 @@ import {
   getSessionByCode,
   getSessionById,
   getSessionsByTeacher,
+  getUserById,
   hasResponded,
   incrementParticipant,
   kahootCloseQuestion,
   kahootNextQuestion,
+  loginUser,
   moderateMessage,
+  registerUser,
   rejectQuestion,
+  resetPassword,
   saveChatMessage,
   saveKahootResponse,
   saveResponse,
   updateQuestion,
   updateQuiz,
   updateSession,
+  verifyEmail,
 } from "./db";
+import { sendVerificationEmail, sendPasswordResetEmail } from "./email";
+import { SignJWT, jwtVerify } from "jose";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function generateSessionCode(): string {
@@ -71,7 +79,81 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      ctx.res.clearCookie("av_token", { path: "/" });
       return { success: true } as const;
+    }),
+
+    register: publicProcedure
+      .input(z.object({ name: z.string().min(2), email: z.string().email(), password: z.string().min(8) }))
+      .mutation(async ({ input }) => {
+        try {
+          const { user, verificationToken } = await registerUser(input);
+          try { await sendVerificationEmail(user.email!, user.name!, verificationToken); } catch (e) { console.error("[Email]", e); }
+          return { success: true, message: "Conta criada! Verifica o teu email para ativar a conta." };
+        } catch (e: any) {
+          if (e.message === "EMAIL_TAKEN") throw new Error("Este email já está registado.");
+          throw e;
+        }
+      }),
+
+    login: publicProcedure
+      .input(z.object({ email: z.string().email(), password: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const user = await loginUser(input.email, input.password);
+          const secret = new TextEncoder().encode(process.env.JWT_SECRET || "aula-viva-secret");
+          const token = await new SignJWT({ sub: String(user.id), role: user.role })
+            .setProtectedHeader({ alg: "HS256" }).setExpirationTime("30d").sign(secret);
+          ctx.res.cookie("av_token", token, { httpOnly: true, secure: true, sameSite: "none", path: "/", maxAge: 30 * 24 * 60 * 60 });
+          return { success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
+        } catch (e: any) {
+          if (e.message === "INVALID_CREDENTIALS") throw new Error("Email ou password incorretos.");
+          if (e.message === "EMAIL_NOT_VERIFIED") throw new Error("Confirma o teu email antes de entrar.");
+          throw e;
+        }
+      }),
+
+    verifyEmail: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .mutation(async ({ input }) => {
+        try { await verifyEmail(input.token); return { success: true }; }
+        catch (e: any) {
+          if (e.message === "INVALID_TOKEN") throw new Error("Link inválido ou já utilizado.");
+          if (e.message === "TOKEN_EXPIRED") throw new Error("Este link expirou.");
+          throw e;
+        }
+      }),
+
+    forgotPassword: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const result = await createPasswordResetToken(input.email);
+        if (result) { try { await sendPasswordResetEmail(result.user.email!, result.user.name!, result.resetToken); } catch (e) { console.error("[Email]", e); } }
+        return { success: true };
+      }),
+
+    resetPassword: publicProcedure
+      .input(z.object({ token: z.string(), password: z.string().min(8) }))
+      .mutation(async ({ input }) => {
+        try { await resetPassword(input.token, input.password); return { success: true }; }
+        catch (e: any) {
+          if (e.message === "INVALID_TOKEN") throw new Error("Link inválido ou já utilizado.");
+          if (e.message === "TOKEN_EXPIRED") throw new Error("Este link expirou. Pede um novo.");
+          throw e;
+        }
+      }),
+
+    meWithLocal: publicProcedure.query(async ({ ctx }) => {
+      if (ctx.user) return ctx.user;
+      const avToken = (ctx.req as any).cookies?.av_token;
+      if (!avToken) return null;
+      try {
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET || "aula-viva-secret");
+        const { payload } = await jwtVerify(avToken, secret);
+        const userId = Number(payload.sub);
+        if (!userId) return null;
+        return await getUserById(userId);
+      } catch { return null; }
     }),
   }),
 

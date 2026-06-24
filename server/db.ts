@@ -15,6 +15,8 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import bcrypt from "bcryptjs";
+import { nanoid } from "nanoid";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -71,6 +73,115 @@ export async function getUserByOpenId(openId: string) {
   if (!db) return undefined;
   const r = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return r[0];
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const r = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return r[0];
+}
+
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const r = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return r[0];
+}
+
+// ─── Autenticação Própria ─────────────────────────────────────────────────────
+export async function registerUser(data: { name: string; email: string; password: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const existing = await getUserByEmail(data.email);
+  if (existing) throw new Error("EMAIL_TAKEN");
+
+  const passwordHash = await bcrypt.hash(data.password, 12);
+  const verificationToken = nanoid(48);
+  const verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+  const openId = `local_${nanoid(24)}`; // openId sintético para compatibilidade
+
+  await db.insert(users).values({
+    openId,
+    name: data.name,
+    email: data.email,
+    loginMethod: "email",
+    passwordHash,
+    emailVerified: false,
+    verificationToken,
+    verificationTokenExpiresAt,
+    lastSignedIn: new Date(),
+  });
+
+  const created = await getUserByEmail(data.email);
+  return { user: created!, verificationToken };
+}
+
+export async function loginUser(email: string, password: string) {
+  const user = await getUserByEmail(email);
+  if (!user || !user.passwordHash) throw new Error("INVALID_CREDENTIALS");
+  if (!user.emailVerified) throw new Error("EMAIL_NOT_VERIFIED");
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) throw new Error("INVALID_CREDENTIALS");
+
+  const db = await getDb();
+  if (db) await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, user.id));
+
+  return user;
+}
+
+export async function verifyEmail(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const r = await db.select().from(users).where(eq(users.verificationToken, token)).limit(1);
+  const user = r[0];
+  if (!user) throw new Error("INVALID_TOKEN");
+  if (user.verificationTokenExpiresAt && user.verificationTokenExpiresAt < new Date())
+    throw new Error("TOKEN_EXPIRED");
+
+  await db.update(users)
+    .set({ emailVerified: true, verificationToken: null, verificationTokenExpiresAt: null })
+    .where(eq(users.id, user.id));
+
+  return user;
+}
+
+export async function createPasswordResetToken(email: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const user = await getUserByEmail(email);
+  if (!user) return null; // silencioso por segurança
+
+  const resetToken = nanoid(48);
+  const resetTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
+
+  await db.update(users)
+    .set({ resetToken, resetTokenExpiresAt })
+    .where(eq(users.id, user.id));
+
+  return { user, resetToken };
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const r = await db.select().from(users).where(eq(users.resetToken, token)).limit(1);
+  const user = r[0];
+  if (!user) throw new Error("INVALID_TOKEN");
+  if (user.resetTokenExpiresAt && user.resetTokenExpiresAt < new Date())
+    throw new Error("TOKEN_EXPIRED");
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await db.update(users)
+    .set({ passwordHash, resetToken: null, resetTokenExpiresAt: null })
+    .where(eq(users.id, user.id));
+
+  return user;
 }
 
 // ─── Banco de Perguntas ───────────────────────────────────────────────────────

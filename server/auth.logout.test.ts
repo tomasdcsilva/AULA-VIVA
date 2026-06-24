@@ -49,7 +49,8 @@ describe("auth.logout", () => {
     const result = await caller.auth.logout();
 
     expect(result).toEqual({ success: true });
-    expect(clearedCookies).toHaveLength(1);
+    // O logout limpa 2 cookies: o cookie OAuth do Manus e o cookie JWT próprio (av_token)
+    expect(clearedCookies).toHaveLength(2);
     expect(clearedCookies[0]?.name).toBe(COOKIE_NAME);
     expect(clearedCookies[0]?.options).toMatchObject({
       maxAge: -1,
@@ -58,5 +59,6 @@ describe("auth.logout", () => {
       httpOnly: true,
       path: "/",
     });
+    expect(clearedCookies[1]?.name).toBe("av_token");
   });
 });

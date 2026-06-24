@@ -1,4 +1,3 @@
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -9,18 +8,20 @@ type UseAuthOptions = {
 };
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
+  const { redirectOnUnauthenticated = false, redirectPath = "/login" } =
     options ?? {};
   const utils = trpc.useUtils();
 
-  const meQuery = trpc.auth.me.useQuery(undefined, {
+  // Usa meWithLocal que verifica tanto o OAuth do Manus como o JWT próprio (av_token)
+  const meQuery = trpc.auth.meWithLocal.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
-      utils.auth.me.setData(undefined, null);
+      utils.auth.meWithLocal.setData(undefined, null);
+      window.location.href = "/login";
     },
   });
 
@@ -32,12 +33,13 @@ export function useAuth(options?: UseAuthOptions) {
         error instanceof TRPCClientError &&
         error.data?.code === "UNAUTHORIZED"
       ) {
+        window.location.href = "/login";
         return;
       }
       throw error;
     } finally {
-      utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
+      utils.auth.meWithLocal.setData(undefined, null);
+      window.location.href = "/login";
     }
   }, [logoutMutation, utils]);
 
@@ -66,8 +68,13 @@ export function useAuth(options?: UseAuthOptions) {
     if (state.user) return;
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
+    if (window.location.pathname === "/login") return;
+    if (window.location.pathname === "/register") return;
+    if (window.location.pathname === "/forgot-password") return;
+    if (window.location.pathname === "/reset-password") return;
+    if (window.location.pathname === "/verify-email") return;
 
-    window.location.href = redirectPath
+    window.location.href = redirectPath;
   }, [
     redirectOnUnauthenticated,
     redirectPath,

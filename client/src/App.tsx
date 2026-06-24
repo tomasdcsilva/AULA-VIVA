@@ -17,13 +17,21 @@ import Coordination from "./pages/Coordination";
 import KahootHost from "./pages/KahootHost";
 import KahootPlayer from "./pages/KahootPlayer";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 import ProjectionView from "./pages/ProjectionView";
 
 function Router() {
   return (
     <Switch>
-      {/* Página de login personalizada (sem navbar) */}
+      {/* Páginas de autenticação própria (sem navbar) */}
       <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/verify-email" component={VerifyEmail} />
 
       {/* Rotas públicas do aluno (sem navbar) */}
       <Route path="/join" component={JoinSession} />
