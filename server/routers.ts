@@ -18,6 +18,7 @@ import {
   getChatMessages,
   getCoordinationStats,
   getKahootLeaderboard,
+  getKahootOpenAnswers,
   getKahootQuestionStats,
   getKahootState,
   getPendingQuestions,
@@ -700,6 +701,11 @@ export const appRouter = router({
     questionStats: publicProcedure
       .input(z.object({ sessionId: z.number(), questionId: z.number() }))
       .query(({ input }) => getKahootQuestionStats(input.sessionId, input.questionId)),
+
+    /** Respostas abertas de uma pergunta */
+    openAnswers: publicProcedure
+      .input(z.object({ sessionId: z.number(), questionId: z.number() }))
+      .query(({ input }) => getKahootOpenAnswers(input.sessionId, input.questionId)),
 
     /** Placar final anónimo */
     leaderboard: publicProcedure

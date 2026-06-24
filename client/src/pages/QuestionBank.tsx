@@ -52,7 +52,7 @@ const EDUCATION_LEVELS: Record<string, string> = {
 
 const DEFAULT_OPTIONS: Record<string, string[]> = {
   multiple_choice: ["Concordo totalmente", "Concordo", "Discordo", "Discordo totalmente"],
-  scale: ["1 – Discordo totalmente", "2", "3", "4", "5 – Concordo totalmente"],
+  scale: ["Concordo totalmente", "Concordo parcialmente", "Discordo parcialmente", "Discordo totalmente"],
   open: [],
 };
 

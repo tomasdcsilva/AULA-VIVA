@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { CheckCircle, Clock, Trophy, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "wouter";
 import { toast } from "sonner";
@@ -19,7 +19,6 @@ export default function KahootPlayer() {
   const { id } = useParams<{ id: string }>();
   const sessionId = Number(id);
 
-  // Token anónimo persistente nesta sessão
   const anonToken = useRef(
     sessionStorage.getItem(`kahoot_token_${sessionId}`) ??
     (() => {
@@ -32,62 +31,34 @@ export default function KahootPlayer() {
   const [phase, setPhase] = useState<GamePhase>("waiting");
   const [lastQIndex, setLastQIndex] = useState(-1);
   const [myAnswer, setMyAnswer] = useState<string | null>(null);
+  const [openText, setOpenText] = useState("");
   const [timeLeft, setTimeLeft] = useState(0);
-  const [wasCorrect, setWasCorrect] = useState<boolean | null>(null);
-  const [showResultsFor, setShowResultsFor] = useState<number | null>(null);
 
   const validId = !isNaN(sessionId) && sessionId > 0;
 
-  // Polling do estado da sessão
   const { data: kahootState } = trpc.kahoot.state.useQuery(
     { sessionId },
     { enabled: validId, refetchInterval: 1000 }
   );
 
-  // Obter a pergunta ativa via estado
-  const activeQIndex = kahootState?.activeQuestionIndex ?? -1;
-
-  // Estatísticas da pergunta (quando encerrada)
-  const { data: qStats } = trpc.kahoot.questionStats.useQuery(
-    { sessionId, questionId: showResultsFor ?? 0 },
-    { enabled: !!showResultsFor && phase === "results" }
-  );
-
-  // Placar final
-  const { data: leaderboard } = trpc.kahoot.leaderboard.useQuery(
-    { sessionId },
-    { enabled: phase === "leaderboard" || phase === "finished" }
-  );
-
-  // Mutation para submeter resposta
   const submitAnswer = trpc.kahoot.answer.useMutation({
     onError: (e) => {
       if (!e.message.includes("Já respondeste")) toast.error(e.message);
     },
   });
 
-  // Sincronizar fase com estado do servidor
   useEffect(() => {
     if (!kahootState) return;
-
     const { status, activeQuestionIndex, timeRemaining } = kahootState;
 
-    if (status === "waiting") {
-      setPhase("waiting");
-      return;
-    }
-
-    if (status === "closed") {
-      setPhase("finished");
-      return;
-    }
+    if (status === "waiting") { setPhase("waiting"); return; }
+    if (status === "closed") { setPhase("finished"); return; }
 
     if (status === "active") {
       if (activeQuestionIndex !== lastQIndex) {
-        // Nova pergunta
         setLastQIndex(activeQuestionIndex);
         setMyAnswer(null);
-        setWasCorrect(null);
+        setOpenText("");
         setPhase("question");
         setTimeLeft(timeRemaining);
       } else if (phase === "question") {
@@ -97,19 +68,14 @@ export default function KahootPlayer() {
 
     if (status === "voting_closed") {
       if (phase === "question" || phase === "answered") {
-        setShowResultsFor(null); // será definido quando tivermos o questionId
         setPhase("results");
       }
     }
   }, [kahootState]);
 
-  // Temporizador local
   useEffect(() => {
     if (phase !== "question") return;
-    if (timeLeft <= 0) {
-      setPhase("answered"); // tempo esgotado sem responder
-      return;
-    }
+    if (timeLeft <= 0) { setPhase("answered"); return; }
     const t = setTimeout(() => setTimeLeft((p) => Math.max(0, p - 1)), 1000);
     return () => clearTimeout(t);
   }, [phase, timeLeft]);
@@ -119,18 +85,23 @@ export default function KahootPlayer() {
     const answer = String(optionIndex);
     setMyAnswer(answer);
     setPhase("answered");
-    submitAnswer.mutate({
-      sessionId,
-      anonToken: anonToken.current,
-      answer,
-    });
+    submitAnswer.mutate({ sessionId, anonToken: anonToken.current, answer });
+  };
+
+  const handleOpenSubmit = () => {
+    if (phase !== "question" || myAnswer !== null || !openText.trim()) return;
+    setMyAnswer(openText.trim());
+    setPhase("answered");
+    submitAnswer.mutate({ sessionId, anonToken: anonToken.current, answer: openText.trim() });
   };
 
   const timePct = kahootState ? (timeLeft / (kahootState.questionDuration || 20)) * 100 : 100;
   const activeQuestion = kahootState?.activeQuestion;
+  const isOpen = activeQuestion?.type === "open";
+  const cleanText = (t: string) => t.replace(/\?+$/, "");
 
   return (
-    <div className="min-h-screen bg-navy flex flex-col items-center justify-center p-4">
+    <div className="fixed inset-0 bg-navy flex flex-col items-center justify-center p-4 overflow-hidden">
 
       {/* ── A AGUARDAR ── */}
       {phase === "waiting" && (
@@ -151,64 +122,90 @@ export default function KahootPlayer() {
 
       {/* ── PERGUNTA ── */}
       {phase === "question" && (
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md flex flex-col gap-4">
           {/* Temporizador */}
-          <div className="flex justify-center mb-4">
-            <div className={`relative w-20 h-20 flex items-center justify-center`}>
-              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 80 80">
-                <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
+          <div className="flex justify-center">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
                 <circle
-                  cx="40" cy="40" r="34"
+                  cx="32" cy="32" r="27"
                   fill="none"
                   stroke={timeLeft <= 5 ? "#e21b3c" : "#2ec4b6"}
-                  strokeWidth="6"
-                  strokeDasharray={`${2 * Math.PI * 34}`}
-                  strokeDashoffset={`${2 * Math.PI * 34 * (1 - timePct / 100)}`}
+                  strokeWidth="5"
+                  strokeDasharray={`${2 * Math.PI * 27}`}
+                  strokeDashoffset={`${2 * Math.PI * 27 * (1 - timePct / 100)}`}
                   className="transition-all duration-1000"
                 />
               </svg>
-              <span className={`font-black text-2xl z-10 ${timeLeft <= 5 ? "text-red-400" : "text-white"}`}>
+              <span className={`font-black text-xl z-10 ${timeLeft <= 5 ? "text-red-400" : "text-white"}`}>
                 {timeLeft}
               </span>
             </div>
           </div>
 
-          <p className="text-white/50 text-center text-sm mb-2">
-            Pergunta {(kahootState?.activeQuestionIndex ?? 0) + 1}
-          </p>
-
           {/* Texto da pergunta */}
           {activeQuestion && (
-            <div className="bg-white/10 rounded-2xl p-4 mb-4 text-center">
-              <p className="text-white font-semibold text-base">{activeQuestion.text}</p>
+            <div className="bg-white/10 rounded-2xl p-4 text-center">
+              <p className="text-white font-semibold text-base leading-snug">
+                {cleanText(activeQuestion.text)}
+              </p>
             </div>
           )}
 
-          {/* Botões de resposta */}
-          <div className="grid grid-cols-2 gap-3">
-            {(activeQuestion?.options ?? ["A", "B", "C", "D"]).map((opt, i) => {
-              const color = OPTION_COLORS[i % OPTION_COLORS.length];
-              return (
-              <button
-                key={i}
-                onClick={() => handleAnswer(i)}
-                className={`${color.bg} rounded-2xl transition-all active:scale-95 shadow-lg min-h-[90px] w-full`}
-                aria-label={`Opção ${i + 1}`}
+          {/* Pergunta aberta — caixa de texto */}
+          {isOpen ? (
+            <div className="flex flex-col gap-3">
+              <textarea
+                className="w-full bg-white/10 text-white placeholder-white/40 rounded-2xl p-4 text-base resize-none focus:outline-none focus:ring-2 focus:ring-teal"
+                rows={4}
+                placeholder="Escreve a tua resposta aqui..."
+                value={openText}
+                onChange={(e) => setOpenText(e.target.value)}
+                disabled={myAnswer !== null}
               />
-            );
-            })}
-          </div>
+              <button
+                onClick={handleOpenSubmit}
+                disabled={!openText.trim() || myAnswer !== null}
+                className="bg-teal hover:bg-teal-dark disabled:opacity-40 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 text-lg"
+              >
+                Enviar resposta
+              </button>
+            </div>
+          ) : (
+            /* Perguntas de escolha múltipla / escala — blocos de cor */
+            <div className="grid grid-cols-2 gap-3">
+              {(activeQuestion?.options ?? ["A", "B", "C", "D"]).map((_opt, i) => {
+                const color = OPTION_COLORS[i % OPTION_COLORS.length];
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleAnswer(i)}
+                    className={`${color.bg} rounded-2xl transition-all active:scale-95 shadow-lg h-24 w-full`}
+                    aria-label={`Opção ${i + 1}`}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── RESPONDIDO (a aguardar resultado) ── */}
+      {/* ── RESPONDIDO ── */}
       {phase === "answered" && (
         <div className="text-center text-white">
-          <div className="text-6xl mb-6">⏳</div>
+          <div className="text-6xl mb-6">✅</div>
           <h2 className="text-2xl font-display font-bold mb-2">Resposta enviada!</h2>
-          <p className="text-white/60">A aguardar que o professor encerre a pergunta...</p>
-          {myAnswer !== null && (
-            <div className={`mt-6 w-20 h-20 rounded-2xl ${OPTION_COLORS[Number(myAnswer) % OPTION_COLORS.length].bg} mx-auto`} />
+          <p className="text-white/60">A aguardar que o professor avance...</p>
+          {myAnswer !== null && !isOpen && (
+            <div
+              className={`mt-6 w-20 h-20 rounded-2xl mx-auto ${OPTION_COLORS[Number(myAnswer) % OPTION_COLORS.length]?.bg ?? "bg-teal"}`}
+            />
+          )}
+          {myAnswer !== null && isOpen && (
+            <div className="mt-6 bg-white/10 rounded-2xl p-4 max-w-xs mx-auto text-sm text-white/80 italic">
+              "{myAnswer}"
+            </div>
           )}
         </div>
       )}
@@ -216,67 +213,31 @@ export default function KahootPlayer() {
       {/* ── RESULTADOS DA PERGUNTA ── */}
       {phase === "results" && (
         <div className="text-center text-white w-full max-w-sm">
-          {wasCorrect === true && (
-            <div className="mb-6">
-              <div className="text-6xl mb-3">🎉</div>
-              <h2 className="text-2xl font-display font-black text-green-400">Correto!</h2>
-            </div>
-          )}
-          {wasCorrect === false && (
-            <div className="mb-6">
-              <div className="text-6xl mb-3">😕</div>
-              <h2 className="text-2xl font-display font-black text-red-400">Incorreto</h2>
-            </div>
-          )}
-          {wasCorrect === null && myAnswer !== null && (
-            <div className="mb-6">
-              <div className="text-6xl mb-3">✅</div>
-              <h2 className="text-2xl font-display font-bold">Respondeste!</h2>
-            </div>
-          )}
-          {myAnswer === null && (
-            <div className="mb-6">
-              <div className="text-6xl mb-3">⌛</div>
-              <h2 className="text-2xl font-display font-bold text-white/60">Tempo esgotado</h2>
-            </div>
-          )}
+          <div className="mb-6">
+            <div className="text-6xl mb-3">✅</div>
+            <h2 className="text-2xl font-display font-bold">Obrigado pela tua opinião!</h2>
+          </div>
           <div className="bg-white/10 rounded-2xl p-4">
             <div className="w-6 h-6 border-2 border-teal border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            <p className="text-white/50 text-sm">A aguardar próxima pergunta...</p>
+            <p className="text-white/50 text-sm">A aguardar próxima questão...</p>
           </div>
         </div>
       )}
 
-      {/* ── JOGO TERMINADO / PLACAR ── */}
-      {(phase === "finished" || phase === "leaderboard") && leaderboard && (
+      {/* ── JOGO TERMINADO ── */}
+      {(phase === "finished" || phase === "leaderboard") && (
         <div className="text-center text-white w-full max-w-sm">
-          <div className="text-5xl mb-4">🏆</div>
-          <h2 className="text-2xl font-display font-black mb-1">Jogo Terminado!</h2>
-          <p className="text-white/50 text-sm mb-6">Placar anónimo da turma</p>
-
-          <div className="space-y-2 mb-6">
-            {leaderboard.slice(0, 10).map((entry, i) => {
-              const medals = ["🥇", "🥈", "🥉"];
-              return (
-                <div
-                  key={i}
-                  className={`flex items-center gap-3 rounded-xl p-3 ${
-                    i === 0 ? "bg-gold/20 border border-gold/30" :
-                    i === 1 ? "bg-white/15" :
-                    i === 2 ? "bg-white/10" : "bg-white/5"
-                  }`}
-                >
-                  <span className="text-xl w-8 text-center">{medals[i] ?? `#${entry.position}`}</span>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold text-sm">Jogador {entry.position}</p>
-                  </div>
-                  <span className="font-black text-teal">{entry.correct} ✓</span>
-                </div>
-              );
-            })}
+          <div className="text-6xl mb-4">🎓</div>
+          <h2 className="text-2xl font-display font-black mb-2">Sessão concluída!</h2>
+          <p className="text-white/60 mb-8 text-sm">
+            Obrigado pela tua participação. As tuas respostas foram registadas de forma anónima.
+          </p>
+          <div className="bg-white/10 rounded-2xl p-6">
+            <p className="text-white/70 text-sm leading-relaxed">
+              O professor irá agora conduzir a discussão com base nas respostas da turma.
+            </p>
           </div>
-
-          <p className="text-white/30 text-xs">Nenhum nome é revelado — anonimato garantido</p>
+          <p className="text-white/30 text-xs mt-6">Nenhum nome é revelado — anonimato garantido</p>
         </div>
       )}
     </div>

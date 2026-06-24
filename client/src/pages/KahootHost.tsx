@@ -254,7 +254,7 @@ export default function KahootHost() {
 
             {/* Texto da pergunta */}
             <div className="bg-white/10 rounded-2xl p-6 mb-6 text-center">
-              <p className="text-xl font-display font-bold">{activeQuestion.text}</p>
+              <p className="text-xl font-display font-bold">{activeQuestion.text.replace(/\?+$/, '')}</p>
             </div>
 
             {/* Opções de resposta */}
@@ -284,31 +284,27 @@ export default function KahootHost() {
         {phase === "results" && activeQuestion && qStats && (
           <div className="w-full max-w-3xl">
             <div className="text-center mb-6">
-              <h2 className="text-xl font-display font-bold mb-1">Resultados</h2>
-              <p className="text-white/60 text-sm">{activeQuestion.text}</p>
+              <h2 className="text-xl font-display font-bold mb-1">Distribuição de Opiniões</h2>
+              <p className="text-white/60 text-sm">{activeQuestion.text.replace(/\?+$/, '')}</p>
             </div>
 
-            {/* Gráfico de barras */}
+            {/* Gráfico de barras — sem destaque de correto/incorreto */}
             {activeQuestion.options && (
               <div className="space-y-3 mb-6">
                 {(JSON.parse(activeQuestion.options) as string[]).map((opt, i) => {
                   const count = qStats.byOption[String(i)] ?? 0;
                   const pct = qStats.total > 0 ? Math.round((count / qStats.total) * 100) : 0;
-                  const isCorrect = activeQuestion.correctOption === i;
                   return (
                     <div key={i} className="flex items-center gap-3">
                       <span className={`w-8 h-8 rounded-lg flex-shrink-0 ${OPTION_COLORS[i % OPTION_COLORS.length].bg}`} />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm text-white/80">{opt}</span>
-                          <div className="flex items-center gap-2">
-                            {isCorrect && <CheckCircle className="w-4 h-4 text-green-400" />}
-                            <span className="text-sm font-bold">{count} ({pct}%)</span>
-                          </div>
+                          <span className="text-sm font-bold">{count} ({pct}%)</span>
                         </div>
                         <div className="h-3 bg-white/10 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all duration-700 ${isCorrect ? "bg-green-400" : OPTION_COLORS[i % OPTION_COLORS.length].bg}`}
+                            className={`h-full rounded-full transition-all duration-700 ${OPTION_COLORS[i % OPTION_COLORS.length].bg}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -321,10 +317,9 @@ export default function KahootHost() {
 
             <div className="flex items-center justify-between bg-white/10 rounded-xl p-4 mb-6">
               <div className="flex items-center gap-2 text-teal">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-semibold">{qStats.correct} respostas corretas</span>
+                <BarChart2 className="w-5 h-5" />
+                <span className="font-semibold">{qStats.total} respostas recebidas</span>
               </div>
-              <span className="text-white/60 text-sm">{qStats.total} total</span>
             </div>
 
             <button
@@ -332,47 +327,37 @@ export default function KahootHost() {
               className="w-full bg-teal hover:bg-teal-dark text-white font-bold py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-lg"
             >
               {currentQIndex + 1 >= totalQuestions ? (
-                <><Trophy className="w-5 h-5" /> Ver Placar Final</>
+                <><Trophy className="w-5 h-5" /> Terminar Sessão</>
               ) : (
-                <><ArrowRight className="w-5 h-5" /> Próxima Pergunta ({currentQIndex + 2}/{totalQuestions})</>
+                <><ArrowRight className="w-5 h-5" /> Próxima Questão ({currentQIndex + 2}/{totalQuestions})</>
               )}
             </button>
           </div>
         )}
 
-        {/* ── PLACAR FINAL ── */}
-        {phase === "leaderboard" && leaderboard && (
+        {/* ── SESSÃO TERMINADA ── */}
+        {phase === "leaderboard" && (
           <div className="w-full max-w-lg text-center">
-            <div className="text-5xl mb-4">🏆</div>
-            <h2 className="text-3xl font-display font-black mb-2">Jogo Terminado!</h2>
-            <p className="text-white/60 mb-8">Placar anónimo — nenhum nome é revelado</p>
+            <div className="text-5xl mb-4">🎓</div>
+            <h2 className="text-3xl font-display font-black mb-2">Sessão Concluída!</h2>
+            <p className="text-white/60 mb-8">
+              Todas as questões foram respondidas. As opiniões da turma estão disponíveis no relatório.
+            </p>
 
-            <div className="space-y-3 mb-8">
-              {leaderboard.slice(0, 10).map((entry, i) => {
-                const medals = ["🥇", "🥈", "🥉"];
-                return (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-4 rounded-xl p-4 ${
-                      i === 0 ? "bg-gold/20 border border-gold/40" :
-                      i === 1 ? "bg-white/15" :
-                      i === 2 ? "bg-white/10" : "bg-white/5"
-                    }`}
-                  >
-                    <span className="text-2xl w-8 text-center">
-                      {medals[i] ?? `#${entry.position}`}
-                    </span>
-                    <div className="flex-1 text-left">
-                      <p className="font-bold">Jogador Anónimo {entry.position}</p>
-                      <p className="text-white/50 text-xs">{entry.total} respostas dadas</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-black text-teal text-lg">{entry.correct}</p>
-                      <p className="text-white/50 text-xs">corretas</p>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="bg-white/10 rounded-2xl p-6 mb-8 text-left space-y-3">
+              <p className="text-white/80 text-sm font-semibold uppercase tracking-wide mb-2">Resumo da sessão</p>
+              {leaderboard && (
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60 text-sm">Participantes anónimos</span>
+                  <span className="font-bold text-teal">{leaderboard.length}</span>
+                </div>
+              )}
+              {leaderboard && (
+                <div className="flex items-center justify-between">
+                  <span className="text-white/60 text-sm">Total de respostas</span>
+                  <span className="font-bold text-teal">{leaderboard.reduce((s, e) => s + e.total, 0)}</span>
+                </div>
+              )}
             </div>
 
             <button

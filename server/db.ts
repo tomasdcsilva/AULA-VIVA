@@ -552,7 +552,7 @@ export async function getKahootState(sessionId: number) {
 
   // Obter o questionId real da pergunta ativa
   let activeQuestionId: number | null = null;
-  let activeQuestionData: { id: number; text: string; options: string[] | null } | null = null;
+  let activeQuestionData: { id: number; text: string; type: string; options: string[] | null } | null = null;
   if (sess.activeQuestionIndex >= 0) {
     const quiz = await getQuizById(sess.quizId);
     if (quiz) {
@@ -565,6 +565,7 @@ export async function getKahootState(sessionId: number) {
           activeQuestionData = {
             id: q.id,
             text: q.text,
+            type: q.type,
             options: q.options ? JSON.parse(q.options) : null,
           };
         }
@@ -609,6 +610,22 @@ export async function getKahootQuestionStats(sessionId: number, questionId: numb
   }
 
   return { total, correct, byOption };
+}
+
+/** Obtém respostas abertas (texto) de uma pergunta específica */
+export async function getKahootOpenAnswers(sessionId: number, questionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select()
+    .from(sessionResponses)
+    .where(
+      and(
+        eq(sessionResponses.sessionId, sessionId),
+        eq(sessionResponses.questionId, questionId)
+      )
+    );
+  return rows.map((r) => r.answer).filter(Boolean);
 }
 
 /** Placar final: ordena tokens anónimos por nº de respostas corretas (sem identificar ninguém) */
