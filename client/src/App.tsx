@@ -22,6 +22,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ProjectionView from "./pages/ProjectionView";
+import QuizStats from "./pages/QuizStats";
 
 function Router() {
   return (
@@ -55,6 +56,9 @@ function Router() {
       </Route>
       <Route path="/questions" component={() => <Layout><QuestionBank /></Layout>} />
       <Route path="/session/:id" component={() => <Layout><SessionManager /></Layout>} />
+      <Route path="/quiz/:id/stats">
+        {(params) => <Layout><QuizStats /></Layout>}
+      </Route>
       <Route path="/coordination" component={() => <Layout><Coordination /></Layout>} />
 
       <Route path="/404" component={() => <Layout><NotFound /></Layout>} />

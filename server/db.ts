@@ -301,6 +301,12 @@ export async function getSessionById(id: number) {
   return r[0];
 }
 
+export async function getSessionsByQuiz(quizId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(sessions).where(eq(sessions.quizId, quizId)).orderBy(desc(sessions.createdAt));
+}
+
 export async function getSessionsByTeacher(teacherId: number) {
   const db = await getDb();
   if (!db) return [];

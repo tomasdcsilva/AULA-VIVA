@@ -1,7 +1,17 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import PedagogicBox from "@/components/PedagogicBox";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, Plus, Play, Clock, CheckCircle, Trash2, Copy, Gamepad2 } from "lucide-react";
+import {
+  BookOpen,
+  Plus,
+  Play,
+  Clock,
+  Trash2,
+  Copy,
+  Gamepad2,
+  BarChart2,
+  Pencil,
+} from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -18,26 +28,25 @@ export default function Dashboard() {
   const [, navigate] = useLocation();
   const { data: quizzes, refetch: refetchQuizzes } = trpc.quizzes.list.useQuery(undefined, { enabled: isAuthenticated });
   const { data: sessions } = trpc.sessions.list.useQuery(undefined, { enabled: isAuthenticated });
-  const deleteQuiz = trpc.quizzes.delete.useMutation({ onSuccess: () => refetchQuizzes() });
+
+  const deleteQuiz = trpc.quizzes.delete.useMutation({
+    onSuccess: () => { refetchQuizzes(); toast.success("Quiz eliminado."); },
+    onError: (e) => toast.error(e.message),
+  });
   const duplicateQuiz = trpc.quizzes.duplicate.useMutation({
     onSuccess: () => { refetchQuizzes(); toast.success("Quiz duplicado!"); },
     onError: (e) => toast.error(e.message),
   });
   const createKahootSession = trpc.sessions.create.useMutation({
-    onSuccess: (s) => {
-      navigate(`/kahoot/host/${s.id}`);
-    },
+    onSuccess: (s) => navigate(`/kahoot/host/${s.id}`),
     onError: (e) => toast.error(e.message),
   });
-  const handleLaunchKahoot = (quizId: number) => {
-    createKahootSession.mutate({ quizId, mode: "kahoot" });
+
+  const handleDelete = (id: number, title: string) => {
+    if (confirm(`Eliminar o quiz "${title}"? Esta ação não pode ser desfeita.`)) {
+      deleteQuiz.mutate({ id });
+    }
   };
-  const createSession = trpc.sessions.create.useMutation({
-    onSuccess: (s) => {
-      toast.success(`Sessão criada! Código: ${s.code}`);
-      refetchQuizzes();
-    },
-  });
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -72,10 +81,9 @@ export default function Dashboard() {
 
       {/* Explicação pedagógica */}
       <PedagogicBox title="Como funciona o Painel do Professor">
-        Aqui podes criar quizzes e lançá-los em aula. <strong>Lançar Sessão</strong> cria uma sessão de votação anónima:
-        aparece um código de 6 letras que os alunos introduzem em <em>aulaviva.manus.space/join</em> no telemóvel
-        para responder sem criar conta. <strong>Jogo</strong> lança o mesmo quiz em modo Kahoot competitivo.
-        Depois de criar uma sessão, clica em <strong>Gerir</strong> para controlar o fluxo e ver os resultados em tempo real.
+        Aqui podes criar quizzes e lançá-los em aula. Clica em <strong>Jogar</strong> para lançar o quiz em modo
+        interativo: aparece um código que os alunos introduzem no telemóvel para responder anonimamente.
+        Depois da sessão, clica em <strong>Gerir</strong> para ver as estatísticas e as respostas da turma.
       </PedagogicBox>
 
       {/* Sessões ativas */}
@@ -117,15 +125,17 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {quizzes.map((q) => (
-              <div key={q.id} className="av-card hover:shadow-md transition-shadow">
+              <div key={q.id} className="av-card hover:shadow-md transition-shadow flex flex-col">
+                {/* Cabeçalho do cartão */}
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <h3 className="font-display font-bold text-navy">{q.title}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display font-bold text-navy truncate">{q.title}</h3>
                     {q.literaryWork && (
                       <p className="text-xs text-muted-foreground mt-0.5">📖 {q.literaryWork}</p>
                     )}
                   </div>
-                  <div className="flex gap-1">
+                  {/* Ações secundárias: duplicar e eliminar */}
+                  <div className="flex gap-1 flex-shrink-0">
                     <button
                       onClick={() => duplicateQuiz.mutate({ id: q.id })}
                       className="p-2 text-muted-foreground hover:text-teal transition-colors rounded-lg hover:bg-teal-light"
@@ -134,41 +144,46 @@ export default function Dashboard() {
                       <Copy className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm("Eliminar este quiz?")) deleteQuiz.mutate({ id: q.id });
-                      }}
+                      onClick={() => handleDelete(q.id, q.title)}
+                      disabled={deleteQuiz.isPending}
                       className="p-2 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
-                      title="Eliminar"
+                      title="Eliminar quiz"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-3 text-xs text-muted-foreground">
+
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mb-4 text-xs text-muted-foreground">
                   {q.discipline && <span className="av-badge bg-cream-dark text-navy">📚 {q.discipline}</span>}
                   {q.yearGroup && <span className="av-badge bg-cream-dark text-navy">🎓 {q.yearGroup}</span>}
                   {q.className && <span className="av-badge bg-cream-dark text-navy">👥 {q.className}</span>}
                 </div>
+
+                {/* Botão principal: Jogar */}
+                <button
+                  onClick={() => createKahootSession.mutate({ quizId: q.id, mode: "kahoot" })}
+                  disabled={createKahootSession.isPending}
+                  className="w-full bg-[#e21b3c] hover:bg-[#c01532] active:scale-95 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-base transition-all mb-3 shadow-sm"
+                >
+                  <Gamepad2 className="w-5 h-5" /> Jogar
+                </button>
+
+                {/* Botões secundários: Editar e Gerir */}
                 <div className="flex gap-2">
-                  <Link href={`/quiz/${q.id}/edit`} className="text-center text-sm font-semibold text-teal border border-teal rounded-lg py-2 px-3 hover:bg-teal hover:text-white transition-colors">
-                    Editar
+                  <Link
+                    href={`/quiz/${q.id}/edit`}
+                    className="flex-1 text-center text-sm font-semibold text-teal border border-teal rounded-lg py-2 px-3 hover:bg-teal hover:text-white transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Editar
                   </Link>
-                  <button
-                    onClick={() => createSession.mutate({ quizId: q.id })}
-                    disabled={createSession.isPending}
-                    title="Lança uma sessão de aula: os alunos entram com um código e respondem anonimamente pelo telemóvel"
-                    className="flex-1 av-btn-primary text-sm py-2 flex items-center justify-center gap-1"
+                  <Link
+                    href={`/quiz/${q.id}/stats`}
+                    className="flex-1 text-center text-sm font-semibold text-navy border border-navy/20 rounded-lg py-2 px-3 hover:bg-navy hover:text-white transition-colors flex items-center justify-center gap-1"
                   >
-                    <Play className="w-3 h-3" /> Lançar Sessão
-                  </button>
-                  <button
-                    onClick={() => handleLaunchKahoot(q.id)}
-                    disabled={createKahootSession.isPending}
-                    title="Lançar em Modo Jogo (Kahoot)"
-                    className="bg-[#e21b3c] hover:bg-[#c01532] text-white text-sm py-2 px-3 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-95 font-semibold"
-                  >
-                    <Gamepad2 className="w-3.5 h-3.5" /> Jogo
-                  </button>
+                    <BarChart2 className="w-3.5 h-3.5" /> Gerir
+                  </Link>
                 </div>
               </div>
             ))}

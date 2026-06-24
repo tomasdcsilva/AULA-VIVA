@@ -110,3 +110,15 @@
 - [x] Atualizar useAuth hook para usar JWT próprio em vez de OAuth Manus
 - [x] Atualizar todas as páginas que usam getLoginUrl() para usar /login
 - [x] Testes vitest para os novos routers de autenticação
+
+## Redesign Dashboard e Modo Jogo
+- [x] Botão Eliminar Quiz no Dashboard com confirmação
+- [x] Botão Jogar grande e central nos cartões de quiz
+- [x] Botão Gerir que abre página de estatísticas por quiz
+- [x] Remover botões "Lançar Sessão" e "Jogo" separados
+- [x] Página /quiz/:id/stats com estatísticas agregadas de todas as sessões
+- [x] Procedimento quizzes.stats no servidor
+- [x] Escala com 4 opções concordo/discordo (sem ponto de interrogação)
+- [x] Perguntas abertas: caixa de texto no aluno
+- [x] Ecrã final sem ranking — foco em participação
+- [x] KahootPlayer preenche tela completa no telemóvel

@@ -28,6 +28,7 @@ import {
   getResponseStats,
   getSessionByCode,
   getSessionById,
+  getSessionsByQuiz,
   getSessionsByTeacher,
   getUserById,
   hasResponded,
@@ -356,6 +357,50 @@ export const appRouter = router({
           createdBy: ctx.user.id,
         });
         return { id: newId };
+      }),
+
+    // Estatísticas agregadas de todas as sessões de um quiz
+    stats: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const quiz = await getQuizById(input.id);
+        if (!quiz) throw new TRPCError({ code: "NOT_FOUND" });
+        if (quiz.createdBy !== ctx.user.id && ctx.user.role !== "admin")
+          throw new TRPCError({ code: "FORBIDDEN" });
+
+        const quizSessions = await getSessionsByQuiz(input.id);
+        const questionIds: number[] = JSON.parse(quiz.questionIds);
+        const allQs = await getQuestions();
+        const sessionQs = allQs.filter((q) => questionIds.includes(q.id));
+
+        // Para cada sessão, buscar stats por pergunta
+        const sessionStats = await Promise.all(
+          quizSessions.map(async (s) => ({
+            sessionId: s.id,
+            code: s.code,
+            status: s.status,
+            mode: s.mode,
+            participantCount: s.participantCount,
+            createdAt: s.createdAt,
+            questionStats: await Promise.all(
+              sessionQs.map(async (q) => ({
+                questionId: q.id,
+                text: q.text,
+                type: q.type,
+                options: q.options ? JSON.parse(q.options) as string[] : [],
+                stats: await getResponseStats(s.id, q.id),
+              }))
+            ),
+          }))
+        );
+
+        return {
+          quiz,
+          questions: sessionQs,
+          sessions: sessionStats,
+          totalSessions: quizSessions.length,
+          totalParticipants: quizSessions.reduce((s, sess) => s + sess.participantCount, 0),
+        };
       }),
   }),
 
