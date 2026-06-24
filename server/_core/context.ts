@@ -2,6 +2,7 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
 import { jwtVerify } from "jose";
+import { parse as parseCookieHeader } from "cookie";
 import { getUserById } from "../db";
 
 export type TrpcContext = {
@@ -9,6 +10,14 @@ export type TrpcContext = {
   res: CreateExpressContextOptions["res"];
   user: User | null;
 };
+
+/** Lê um cookie pelo nome a partir do header raw (sem precisar de cookie-parser) */
+function getCookieFromHeader(req: CreateExpressContextOptions["req"], name: string): string | undefined {
+  const rawCookie = req.headers.cookie;
+  if (!rawCookie) return undefined;
+  const parsed = parseCookieHeader(rawCookie);
+  return parsed[name];
+}
 
 export async function createContext(
   opts: CreateExpressContextOptions
@@ -25,7 +34,7 @@ export async function createContext(
   // 2. Se não autenticado via OAuth, tentar o JWT próprio (av_token)
   if (!user) {
     try {
-      const avToken = (opts.req as any).cookies?.av_token;
+      const avToken = getCookieFromHeader(opts.req, "av_token");
       if (avToken) {
         const secret = new TextEncoder().encode(process.env.JWT_SECRET || "aula-viva-secret");
         const { payload } = await jwtVerify(avToken, secret);

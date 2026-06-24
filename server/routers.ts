@@ -48,6 +48,14 @@ import {
 } from "./db";
 import { sendVerificationEmail, sendPasswordResetEmail } from "./email";
 import { SignJWT, jwtVerify } from "jose";
+import { parse as parseCookieHeader } from "cookie";
+
+function getAvToken(req: any): string | undefined {
+  const rawCookie = req.headers?.cookie;
+  if (!rawCookie) return undefined;
+  const parsed = parseCookieHeader(rawCookie);
+  return parsed["av_token"];
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function generateSessionCode(): string {
@@ -145,7 +153,7 @@ export const appRouter = router({
 
     meWithLocal: publicProcedure.query(async ({ ctx }) => {
       if (ctx.user) return ctx.user;
-      const avToken = (ctx.req as any).cookies?.av_token;
+      const avToken = getAvToken(ctx.req);
       if (!avToken) return null;
       try {
         const secret = new TextEncoder().encode(process.env.JWT_SECRET || "aula-viva-secret");
