@@ -64,6 +64,7 @@ export default function Dashboard() {
   );
 
   const activeSessions = sessions?.filter((s) => s.status !== "closed") ?? [];
+  const completedSessions = sessions?.filter((s) => s.status === "closed") ?? [];
   const recentSessions = sessions?.slice(0, 5) ?? [];
 
   return (
@@ -86,24 +87,25 @@ export default function Dashboard() {
         Depois da sessão, clica em <strong>Gerir</strong> para ver as estatísticas e as respostas da turma.
       </PedagogicBox>
 
-      {/* Sessões ativas */}
+      {/* Jogo em curso */}
       {activeSessions.length > 0 && (
         <div className="mt-8">
           <h2 className="text-lg font-display font-bold text-navy mb-3 flex items-center gap-2">
-            <Play className="w-5 h-5 text-teal" /> Sessões Ativas
+            <Play className="w-5 h-5 text-green-600" /> Jogo em Curso
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activeSessions.map((s) => (
-              <div key={s.id} className="av-card-teal flex items-center justify-between gap-4">
+              <div key={s.id} className="av-card-teal flex items-center justify-between gap-4 border-l-4 border-green-500">
                 <div>
-                  <span className={`av-badge ${STATUS_LABELS[s.status]?.color ?? "bg-gray-100 text-gray-600"} mb-2`}>
-                    {STATUS_LABELS[s.status]?.label}
+                  <span className="av-badge bg-green-100 text-green-800 mb-2 flex items-center gap-1 w-fit">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    A decorrer
                   </span>
                   <p className="font-bold text-navy text-lg tracking-widest">{s.code}</p>
-                  <p className="text-xs text-muted-foreground">{s.participantCount} participante(s)</p>
+                  <p className="text-xs text-muted-foreground">{s.participantCount} aluno(s) ligado(s)</p>
                 </div>
-                <Link href={`/session/${s.id}`} className="av-btn-primary text-sm px-4 py-2">
-                  Gerir
+                <Link href={`/kahoot/host/${s.id}`} className="av-btn-primary text-sm px-4 py-2">
+                  Continuar
                 </Link>
               </div>
             ))}
@@ -191,45 +193,36 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Sessões recentes */}
-      {recentSessions.length > 0 && (
+      {/* Jogos Realizados */}
+      {completedSessions.length > 0 && (
         <div className="mt-8">
           <h2 className="text-lg font-display font-bold text-navy mb-3 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-muted-foreground" /> Sessões Recentes
+            <Clock className="w-5 h-5 text-muted-foreground" /> Jogos Realizados
           </h2>
-          <div className="av-card overflow-hidden p-0">
-            <table className="w-full text-sm">
-              <thead className="bg-cream-dark">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-navy">Código</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy">Estado</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy">Participantes</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy">Data</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {recentSessions.map((s) => (
-                  <tr key={s.id} className="border-t border-border hover:bg-cream-dark/50 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-navy">{s.code}</td>
-                    <td className="px-4 py-3">
-                      <span className={`av-badge ${STATUS_LABELS[s.status]?.color ?? "bg-gray-100 text-gray-600"}`}>
-                        {STATUS_LABELS[s.status]?.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{s.participantCount}</td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {new Date(s.createdAt).toLocaleDateString("pt-PT")}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link href={`/session/${s.id}`} className="text-teal font-semibold hover:underline text-xs">
-                        Ver
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {completedSessions.slice(0, 5).map((s) => (
+              <div key={s.id} className="av-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-cream-dark flex items-center justify-center flex-shrink-0">
+                    <Gamepad2 className="w-5 h-5 text-navy" />
+                  </div>
+                  <div>
+                    <p className="font-mono font-bold text-navy tracking-widest text-sm">{s.code}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(s.createdAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })}
+                      {" · "}
+                      <span className="font-semibold text-navy">{s.participantCount} aluno(s)</span>
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={`/quiz/${s.quizId}/stats`}
+                  className="text-xs font-semibold text-teal border border-teal rounded-lg py-1.5 px-3 hover:bg-teal hover:text-white transition-colors w-fit"
+                >
+                  Ver relatório
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       )}
