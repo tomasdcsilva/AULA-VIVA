@@ -34,13 +34,14 @@ const CHART_COLORS = [
 export default function SessionManager() {
   const { id } = useParams<{ id: string }>();
   const sessionId = Number(id);
+  const isValidId = !isNaN(sessionId) && sessionId > 0;
   const { isAuthenticated } = useAuth();
   const [activeQuestionId, setActiveQuestionId] = useState<number | null>(null);
   const [reportVisible, setReportVisible] = useState(false);
 
   const { data: session, refetch: refetchSession } = trpc.sessions.get.useQuery(
     { id: sessionId },
-    { enabled: isAuthenticated, refetchInterval: 5000 }
+    { enabled: isAuthenticated && isValidId, refetchInterval: 5000 }
   );
 
   const { data: quiz } = trpc.quizzes.get.useQuery(
@@ -52,12 +53,12 @@ export default function SessionManager() {
 
   const { data: chatMessages, refetch: refetchChat } = trpc.chat.allMessages.useQuery(
     { sessionId },
-    { enabled: isAuthenticated, refetchInterval: 3000 }
+    { enabled: isAuthenticated && isValidId, refetchInterval: 3000 }
   );
 
   const { data: report } = trpc.report.generate.useQuery(
     { sessionId },
-    { enabled: reportVisible && isAuthenticated }
+    { enabled: reportVisible && isAuthenticated && isValidId }
   );
 
   const updateStatus = trpc.sessions.updateStatus.useMutation({
@@ -87,6 +88,13 @@ export default function SessionManager() {
       toast.success("Código copiado!");
     }
   };
+
+  if (!isValidId) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <p className="text-muted-foreground">Sessão não encontrada.</p>
+      <a href="/dashboard" className="av-btn-primary">Voltar ao Painel</a>
+    </div>
+  );
 
   if (!session) return (
     <div className="flex items-center justify-center min-h-[60vh]">
