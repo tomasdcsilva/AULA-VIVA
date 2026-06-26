@@ -5,8 +5,7 @@ import { BarChart3, Users, BookOpen, School, Calendar, TrendingUp } from "lucide
 import { useState } from "react";
 import { Link } from "wouter";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from "recharts";
 
 const CHART_COLORS = [

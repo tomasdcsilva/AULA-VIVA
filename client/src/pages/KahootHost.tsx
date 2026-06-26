@@ -69,6 +69,12 @@ export default function KahootHost() {
     { enabled: !!activeQId && showingResults }
   );
 
+  // Respostas abertas da pergunta atual
+  const { data: openAnswers } = trpc.kahoot.openAnswers.useQuery(
+    { sessionId, questionId: activeQId ?? 0 },
+    { enabled: !!activeQId && showingResults && activeQuestion?.type === "open" }
+  );
+
   // Placar final
   const { data: leaderboard } = trpc.kahoot.leaderboard.useQuery(
     { sessionId },
@@ -288,8 +294,19 @@ export default function KahootHost() {
               <p className="text-white/60 text-sm">{activeQuestion.text.replace(/\?+$/, '')}</p>
             </div>
 
+            {/* Respostas abertas */}
+            {activeQuestion.type === "open" && openAnswers && openAnswers.length > 0 && (
+              <div className="space-y-2 mb-6">
+                {openAnswers.map((ans, i) => (
+                  <div key={i} className="bg-white/10 rounded-xl px-4 py-3 text-white/90 text-sm italic">
+                    "{ans}"
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Gráfico de barras — sem destaque de correto/incorreto */}
-            {activeQuestion.options && (
+            {activeQuestion.options && activeQuestion.type !== "open" && (
               <div className="space-y-3 mb-6">
                 {(JSON.parse(activeQuestion.options) as string[]).map((opt, i) => {
                   const count = qStats.byOption[String(i)] ?? 0;

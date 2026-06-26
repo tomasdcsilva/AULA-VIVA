@@ -98,7 +98,22 @@ export default function KahootPlayer() {
   const timePct = kahootState ? (timeLeft / (kahootState.questionDuration || 20)) * 100 : 100;
   const activeQuestion = kahootState?.activeQuestion;
   const isOpen = activeQuestion?.type === "open";
+  const isScale = activeQuestion?.type === "scale";
   const cleanText = (t: string) => t.replace(/\?+$/, "");
+
+  const SCALE_OPTIONS = [
+    "Concordo totalmente",
+    "Concordo parcialmente",
+    "Discordo parcialmente",
+    "Discordo totalmente",
+  ];
+
+  const handleSkip = () => {
+    if (phase !== "question" || myAnswer !== null) return;
+    setMyAnswer("__skip__");
+    setPhase("answered");
+    // não envia nada ao servidor — simplesmente marca como respondido localmente
+  };
 
   return (
     <div className="fixed inset-0 bg-navy flex flex-col items-center justify-center p-4 overflow-hidden">
@@ -153,6 +168,16 @@ export default function KahootPlayer() {
             </div>
           )}
 
+          {/* Botão prefiro não responder */}
+          {myAnswer === null && (
+            <button
+              onClick={handleSkip}
+              className="text-white/40 hover:text-white/70 text-xs underline text-center transition-colors mt-1"
+            >
+              Prefiro não responder
+            </button>
+          )}
+
           {/* Pergunta aberta — caixa de texto */}
           {isOpen ? (
             <div className="flex flex-col gap-3">
@@ -172,8 +197,25 @@ export default function KahootPlayer() {
                 Enviar resposta
               </button>
             </div>
+          ) : isScale ? (
+            /* Perguntas de escala — blocos de cor com texto */
+            <div className="flex flex-col gap-3">
+              {SCALE_OPTIONS.map((label, i) => {
+                const color = OPTION_COLORS[i % OPTION_COLORS.length];
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleAnswer(i)}
+                    className={`${color.bg} rounded-2xl transition-all active:scale-95 shadow-lg py-5 w-full text-white font-bold text-base`}
+                    aria-label={label}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           ) : (
-            /* Perguntas de escolha múltipla / escala — blocos de cor */
+            /* Perguntas de escolha múltipla — blocos de cor */
             <div className="grid grid-cols-2 gap-3">
               {(activeQuestion?.options ?? ["A", "B", "C", "D"]).map((_opt, i) => {
                 const color = OPTION_COLORS[i % OPTION_COLORS.length];
@@ -194,13 +236,20 @@ export default function KahootPlayer() {
       {/* ── RESPONDIDO ── */}
       {phase === "answered" && (
         <div className="text-center text-white">
-          <div className="text-6xl mb-6">✅</div>
-          <h2 className="text-2xl font-display font-bold mb-2">Resposta enviada!</h2>
+          <div className="text-6xl mb-6">{myAnswer === "__skip__" ? "⏭️" : "✅"}</div>
+          <h2 className="text-2xl font-display font-bold mb-2">
+            {myAnswer === "__skip__" ? "Sem resposta" : "Resposta enviada!"}
+          </h2>
           <p className="text-white/60">A aguardar que o professor avance...</p>
-          {myAnswer !== null && !isOpen && (
+          {myAnswer !== null && !isOpen && myAnswer !== "__skip__" && !isScale && (
             <div
               className={`mt-6 w-20 h-20 rounded-2xl mx-auto ${OPTION_COLORS[Number(myAnswer) % OPTION_COLORS.length]?.bg ?? "bg-teal"}`}
             />
+          )}
+          {myAnswer !== null && isScale && myAnswer !== "__skip__" && (
+            <div className={`mt-6 rounded-2xl mx-auto px-6 py-3 font-bold text-white ${OPTION_COLORS[Number(myAnswer) % OPTION_COLORS.length]?.bg ?? "bg-teal"}`}>
+              {SCALE_OPTIONS[Number(myAnswer)] ?? ""}
+            </div>
           )}
           {myAnswer !== null && isOpen && (
             <div className="mt-6 bg-white/10 rounded-2xl p-4 max-w-xs mx-auto text-sm text-white/80 italic">

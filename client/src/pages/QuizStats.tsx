@@ -12,7 +12,9 @@ import {
   TrendingUp,
   CheckCircle2,
   HelpCircle,
+  FileText,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Link, useParams } from "wouter";
 
 const OPTION_COLORS = [
@@ -86,6 +88,15 @@ export default function QuizStats() {
             {quiz.className && <span>👥 {quiz.className}</span>}
           </div>
         </div>
+        <button
+          onClick={() => {
+            window.print();
+            toast.success("Relatório aberto para impressão/PDF!");
+          }}
+          className="av-btn-secondary flex items-center gap-2 flex-shrink-0 print:hidden"
+        >
+          <FileText className="w-4 h-4" /> Exportar PDF
+        </button>
       </div>
 
       {/* Indicadores de participação */}

@@ -225,7 +225,7 @@ export default function QuestionBank() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="av-section-title">Banco de Perguntas</h1>
-          <p className="av-section-subtitle">Perguntas validadas por especialistas, organizadas por tema e nível de ensino.</p>
+          <p className="av-section-subtitle">Perguntas organizadas por tipo e nível de ensino.</p>
         </div>
         {isAdmin && (
           <button
@@ -243,7 +243,7 @@ export default function QuestionBank() {
       </div>
 
       <PedagogicBox title="Como usar o Banco de Perguntas">
-        Escolhe um dos cinco tipos de pergunta abaixo — cada um foi desenhado para desenvolver uma competência específica nos alunos. Escreve o texto adaptado à obra ou tema que estás a trabalhar em aula. As perguntas que propuseres ficam pendentes de aprovação pelo coordenador antes de aparecerem no banco partilhado.
+        Escolhe um dos cinco tipos de pergunta abaixo — cada um foi desenhado para desenvolver uma competência específica nos alunos. Escreve o texto adaptado à obra ou tema que estás a trabalhar em aula e adiciona-a ao banco para usar nos teus quizzes.
       </PedagogicBox>
 
       {/* Painel de perguntas pendentes (admin) */}
@@ -364,11 +364,7 @@ export default function QuestionBank() {
             </button>
           </div>
 
-          {!isAdmin && (
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
-              A tua pergunta ficará pendente de aprovação pelo coordenador antes de aparecer no banco.
-            </p>
-          )}
+
 
           <div className="space-y-4">
             {/* Texto da pergunta */}
@@ -388,8 +384,8 @@ export default function QuestionBank() {
               />
             </div>
 
-            {/* Opções — apenas para múltipla escolha livre */}
-            {showCustomForm && type !== "open" && (
+            {/* Opções — apenas para múltipla escolha livre (não escala) */}
+            {showCustomForm && type !== "open" && type !== "scale" && (
               <div>
                 <label className="block text-sm font-semibold text-navy mb-2">Opções de Resposta</label>
                 <div className="space-y-2">
@@ -427,15 +423,19 @@ export default function QuestionBank() {
               </div>
             )}
 
-            {/* Opções de escala — mostrar como informação (não editáveis) */}
-            {activeTemplate?.type === "scale" && (
+            {/* Opções de escala — fixas, não editáveis */}
+            {(activeTemplate?.type === "scale" || (!activeTemplate && type === "scale")) && (
               <div>
                 <label className="block text-sm font-semibold text-navy mb-2">Opções (fixas)</label>
-                <div className="flex flex-wrap gap-2">
-                  {activeTemplate.options.map((opt, i) => (
-                    <span key={i} className="text-xs px-3 py-1.5 rounded-lg bg-cream-dark text-navy border border-border">{opt}</span>
+                <div className="space-y-1.5">
+                  {["Concordo totalmente", "Concordo parcialmente", "Discordo parcialmente", "Discordo totalmente"].map((opt, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-cream-dark/50 rounded-lg px-3 py-2">
+                      <span className="text-xs font-bold text-muted-foreground w-4">{i + 1}</span>
+                      <span className="text-sm text-navy">{opt}</span>
+                    </div>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">As opções de escala são sempre as mesmas para garantir consistência.</p>
               </div>
             )}
 

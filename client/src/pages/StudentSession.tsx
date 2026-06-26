@@ -28,11 +28,10 @@ const CHART_COLORS = [
 ];
 
 const SCALE_LABELS: Record<string, string> = {
-  "1": "1 — Discordo totalmente",
-  "2": "2 — Discordo",
-  "3": "3 — Neutro",
-  "4": "4 — Concordo",
-  "5": "5 — Concordo totalmente",
+  "0": "Concordo totalmente",
+  "1": "Concordo parcialmente",
+  "2": "Discordo parcialmente",
+  "3": "Discordo totalmente",
 };
 
 export default function StudentSession() {

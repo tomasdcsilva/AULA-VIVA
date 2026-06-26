@@ -122,3 +122,13 @@
 - [x] Perguntas abertas: caixa de texto no aluno
 - [x] Ecrã final sem ranking — foco em participação
 - [x] KahootPlayer preenche tela completa no telemóvel
+
+## Revisão Geral (Jun 2026)
+- [x] KahootPlayer: botão "Prefiro não responder" em todas as perguntas
+- [x] KahootPlayer: perguntas de escala mostrar texto das opções (não só cor)
+- [x] KahootHost: mostrar respostas abertas no ecrã de resultados
+- [x] QuestionBank: remover texto "validado por especialistas" e aviso de aprovação para professores
+- [x] QuestionBank: opções de escala fixas (não editáveis)
+- [x] StudentSession: corrigir SCALE_LABELS para 4 opções concordo/discordo
+- [x] Coordination: remover imports não usados
+- [x] KahootHost: mostrar pergunta aberta no ecrã de resultados com lista de respostas
