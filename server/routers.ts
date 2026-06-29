@@ -296,6 +296,8 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "user")
+          throw new TRPCError({ code: "FORBIDDEN", message: "Apenas professores podem criar quizzes." });
         const id = await createQuiz({
           ...input,
           questionIds: JSON.stringify(input.questionIds),

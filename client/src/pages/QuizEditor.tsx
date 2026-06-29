@@ -122,6 +122,19 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
     );
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="av-section text-center py-24">
+        <div className="max-w-sm mx-auto">
+          <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-2xl font-display font-bold text-navy mb-2">Acesso Restrito</h2>
+          <p className="text-muted-foreground mb-6">Apenas professores registados podem criar e editar quizzes.</p>
+          <Link href="/login" className="av-btn-primary">Entrar na Plataforma</Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="av-section animate-fade-in">
       <div className="flex items-center gap-3 mb-6">
