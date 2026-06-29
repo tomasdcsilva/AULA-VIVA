@@ -220,7 +220,7 @@ export default function StudentSession() {
                 {/* Escala */}
                 {activeQ.type === "scale" && (
                   <div className="space-y-2">
-                    {["1", "2", "3", "4", "5"].map((v) => (
+                    {["0", "1", "2", "3"].map((v) => (
                       <button
                         key={v}
                         disabled={submitted[activeQ.id] || currentStatus === "voting_closed"}

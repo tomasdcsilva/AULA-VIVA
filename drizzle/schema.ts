@@ -73,6 +73,8 @@ export const quizzes = mysqlTable("quizzes", {
   title: varchar("title", { length: 256 }).notNull(),
   description: text("description"),
   literaryWork: varchar("literaryWork", { length: 256 }),
+  excerpt: text("excerpt"), // excerto literário de referência
+  theme: varchar("theme", { length: 128 }), // tema central (controlo, ciúme, etc.)
   discipline: varchar("discipline", { length: 128 }),
   yearGroup: varchar("yearGroup", { length: 32 }),
   className: varchar("className", { length: 64 }),
@@ -93,6 +95,8 @@ export const sessions = mysqlTable("sessions", {
   quizId: int("quizId").notNull(),
   teacherId: int("teacherId").notNull(),
   school: varchar("school", { length: 256 }),
+  className: varchar("className", { length: 64 }), // turma confirmada ao lançar
+  sessionDate: timestamp("sessionDate"), // data confirmada ao lançar
   mode: mysqlEnum("mode", ["normal", "kahoot"]).default("normal").notNull(),
   status: mysqlEnum("status", ["waiting", "active", "voting_closed", "chat_open", "closed"])
     .default("waiting")

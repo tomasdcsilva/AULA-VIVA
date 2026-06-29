@@ -13,9 +13,106 @@ import {
   CheckCircle2,
   HelpCircle,
   FileText,
+  Tag,
+  Quote,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useParams } from "wouter";
+
+const THEME_LABELS: Record<string, string> = {
+  stereotypes: "Estereótipos de Género",
+  control: "Controlo e Ciúme",
+  consent: "Consentimento",
+  psychological_violence: "Violência Psicológica",
+  healthy_relationships: "Relações Saudáveis",
+  jealousy: "Ciúme e Possessividade",
+  peer_pressure: "Pressão do Grupo",
+  social_media: "Redes Sociais e Identidade",
+  masculinities: "Masculinidades",
+  emotional_dependency: "Dependência Emocional",
+};
+
+function exportStructuredReport(quiz: any, sessions: any[]) {
+  const dateStr = new Date().toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" });
+  const themeLabel = quiz.theme ? THEME_LABELS[quiz.theme] ?? quiz.theme : null;
+
+  const sessionsHtml = sessions.map((session: any) => {
+    const totalAnswers = session.questionStats.reduce((sum: number, qs: any) =>
+      sum + qs.stats.reduce((s: number, r: any) => s + r.count, 0), 0);
+    const responseRate = session.questionStats.length > 0
+      ? Math.round((session.questionStats.filter((qs: any) => qs.stats.reduce((s: number, r: any) => s + r.count, 0) > 0).length / session.questionStats.length) * 100)
+      : 0;
+
+    const questionsHtml = session.questionStats.map((qs: any, qi: number) => {
+      const totalQ = qs.stats.reduce((s: number, r: any) => s + r.count, 0);
+      const isOpen = qs.type === "open";
+      const answersHtml = isOpen
+        ? qs.stats.map((r: any) => `<li style="margin-bottom:4px;font-style:italic;color:#555">“${r.answer}”</li>`).join("")
+        : qs.options?.map((opt: string, oi: number) => {
+            const stat = qs.stats.find((s: any) => s.answer === String(oi));
+            const count = stat?.count ?? 0;
+            const pct = totalQ > 0 ? Math.round((count / totalQ) * 100) : 0;
+            return `<div style="margin-bottom:4px"><span style="font-weight:600">${opt}</span>: ${count} (${pct}%)</div>`;
+          }).join("") ?? "";
+      return `<div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #eee">
+        <p style="font-weight:600;color:#1a2e4a;margin-bottom:6px">${qi + 1}. ${qs.text}</p>
+        ${isOpen ? `<ul style="padding-left:16px">${answersHtml}</ul>` : answersHtml}
+        <p style="font-size:11px;color:#888;margin-top:4px">${totalQ} resposta(s)</p>
+      </div>`;
+    }).join("");
+
+    const sessionDateStr = session.createdAt
+      ? new Date(session.createdAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })
+      : "";
+
+    return `<div style="page-break-before:always;padding:32px 0">
+      <h2 style="color:#1a2e4a;font-size:18px;margin-bottom:4px">Sessão ${session.code}</h2>
+      <p style="color:#666;font-size:12px;margin-bottom:16px">${sessionDateStr} &middot; ${session.participantCount} aluno(s) &middot; ${responseRate}% taxa de resposta</p>
+      ${questionsHtml}
+    </div>`;
+  }).join("");
+
+  const html = `<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
+    <title>Relatório Pedagógico — ${quiz.title}</title>
+    <style>
+      body { font-family: Georgia, serif; max-width: 800px; margin: 0 auto; padding: 40px 32px; color: #1a2e4a; }
+      h1 { font-size: 24px; color: #1a2e4a; margin-bottom: 4px; }
+      .meta { font-size: 12px; color: #666; margin-bottom: 24px; }
+      .meta span { margin-right: 16px; }
+      .excerpt { background: #f5f0e8; border-left: 4px solid #2a9d8f; padding: 12px 16px; margin: 16px 0; font-style: italic; font-size: 14px; border-radius: 4px; }
+      .kpi-row { display: flex; gap: 24px; margin: 24px 0; }
+      .kpi { text-align: center; }
+      .kpi .num { font-size: 32px; font-weight: 900; color: #2a9d8f; }
+      .kpi .lbl { font-size: 11px; color: #888; }
+      @media print { body { padding: 20px; } }
+    </style>
+  </head><body>
+    <h1>${quiz.title}</h1>
+    <div class="meta">
+      ${quiz.literaryWork ? `<span>📖 ${quiz.literaryWork}</span>` : ""}
+      ${themeLabel ? `<span>🏷️ ${themeLabel}</span>` : ""}
+      ${quiz.discipline ? `<span>📚 ${quiz.discipline}</span>` : ""}
+      ${quiz.yearGroup ? `<span>🎓 ${quiz.yearGroup}</span>` : ""}
+      ${quiz.className ? `<span>👥 ${quiz.className}</span>` : ""}
+      <span>Exportado em ${dateStr}</span>
+    </div>
+    ${quiz.excerpt ? `<div class="excerpt"><strong>Excerto de referência:</strong><br>${quiz.excerpt}</div>` : ""}
+    <div class="kpi-row">
+      <div class="kpi"><div class="num">${sessions.length}</div><div class="lbl">Sessões</div></div>
+      <div class="kpi"><div class="num">${sessions.reduce((s: number, sess: any) => s + sess.participantCount, 0)}</div><div class="lbl">Participantes</div></div>
+      <div class="kpi"><div class="num">${quiz.questions?.length ?? 0}</div><div class="lbl">Questões</div></div>
+    </div>
+    ${sessionsHtml}
+  </body></html>`;
+
+  const w = window.open("", "_blank");
+  if (w) {
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => w.print(), 500);
+    toast.success("Relatório aberto para exportação PDF!");
+  }
+}
 
 const OPTION_COLORS = [
   "#e21b3c",
@@ -83,16 +180,20 @@ export default function QuizStats() {
           <h1 className="av-section-title">{quiz.title}</h1>
           <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
             {quiz.literaryWork && <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" /> {quiz.literaryWork}</span>}
+            {(quiz as any).theme && <span className="flex items-center gap-1"><Tag className="w-3 h-3" /> {THEME_LABELS[(quiz as any).theme] ?? (quiz as any).theme}</span>}
             {quiz.discipline && <span>📚 {quiz.discipline}</span>}
             {quiz.yearGroup && <span>🎓 {quiz.yearGroup}</span>}
             {quiz.className && <span>👥 {quiz.className}</span>}
           </div>
+          {(quiz as any).excerpt && (
+            <div className="mt-3 p-3 bg-cream-dark rounded-xl border-l-4 border-teal text-sm text-navy italic flex items-start gap-2 max-w-2xl">
+              <Quote className="w-4 h-4 text-teal flex-shrink-0 mt-0.5" />
+              <span>{(quiz as any).excerpt}</span>
+            </div>
+          )}
         </div>
         <button
-          onClick={() => {
-            window.print();
-            toast.success("Relatório aberto para impressão/PDF!");
-          }}
+          onClick={() => exportStructuredReport({ ...quiz, questions: data.questions }, sessions)}
           className="av-btn-secondary flex items-center gap-2 flex-shrink-0 print:hidden"
         >
           <FileText className="w-4 h-4" /> Exportar PDF

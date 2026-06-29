@@ -34,6 +34,8 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [literaryWork, setLiteraryWork] = useState("");
+  const [excerpt, setExcerpt] = useState("");
+  const [theme, setTheme] = useState("");
   const [discipline, setDiscipline] = useState("");
   const [yearGroup, setYearGroup] = useState("");
   const [className, setClassName] = useState("");
@@ -65,6 +67,8 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
       setTitle(existingQuiz.title);
       setDescription(existingQuiz.description ?? "");
       setLiteraryWork(existingQuiz.literaryWork ?? "");
+      setExcerpt((existingQuiz as any).excerpt ?? "");
+      setTheme((existingQuiz as any).theme ?? "");
       setDiscipline(existingQuiz.discipline ?? "");
       setYearGroup(existingQuiz.yearGroup ?? "");
       setClassName(existingQuiz.className ?? "");
@@ -89,7 +93,7 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   // Marcar como alterado apenas após os dados terem sido carregados (evita falso dirty ao carregar)
   useEffect(() => {
     if (dataLoaded) setIsDirty(true);
-  }, [title, description, literaryWork, discipline, yearGroup, className, showResultsImmediately, selectedIds]);
+  }, [title, description, literaryWork, excerpt, theme, discipline, yearGroup, className, showResultsImmediately, selectedIds]);
 
   // Aviso ao tentar sair com alterações não guardadas
   useEffect(() => {
@@ -106,7 +110,7 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const handleSave = () => {
     if (!title.trim()) { toast.error("O título é obrigatório."); return; }
     if (selectedIds.length === 0) { toast.error("Seleciona pelo menos uma pergunta."); return; }
-    const payload = { title, description, literaryWork, discipline, yearGroup, className, showResultsImmediately, questionIds: selectedIds };
+    const payload = { title, description, literaryWork, excerpt: excerpt || undefined, theme: theme || undefined, discipline, yearGroup, className, showResultsImmediately, questionIds: selectedIds };
     setSavedOnce(true);
     if (isEdit) updateQuiz.mutate({ id: numericId, ...payload });
     else createQuiz.mutate(payload);
@@ -167,6 +171,39 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
               value={literaryWork}
               onChange={(e) => setLiteraryWork(e.target.value)}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-navy mb-1">Tema Central</label>
+            <select
+              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card"
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+            >
+              <option value="">Selecionar tema (opcional)</option>
+              <option value="stereotypes">Estereótipos de Género</option>
+              <option value="control">Controlo e Ciúme</option>
+              <option value="consent">Consentimento</option>
+              <option value="psychological_violence">Violência Psicológica</option>
+              <option value="healthy_relationships">Relações Saudáveis</option>
+              <option value="jealousy">Ciúme e Possessividade</option>
+              <option value="peer_pressure">Pressão do Grupo</option>
+              <option value="social_media">Redes Sociais e Identidade</option>
+              <option value="masculinities">Masculinidades</option>
+              <option value="emotional_dependency">Dependência Emocional</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-navy mb-1">Excerto Literário <span className="text-muted-foreground font-normal">(opcional)</span></label>
+            <textarea
+              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card resize-none"
+              rows={4}
+              placeholder="Cola aqui o excerto do texto que vai ser apresentado à turma antes das perguntas..."
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground mt-1">Este excerto será mostrado no relatório pedagógico como ponto de partida da atividade.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

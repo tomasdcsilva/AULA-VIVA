@@ -11,9 +11,14 @@ import {
   Gamepad2,
   BarChart2,
   Pencil,
+  X,
+  CalendarDays,
+  Users2,
+  School,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
+import { useState } from "react";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   waiting:       { label: "A aguardar", color: "bg-amber-100 text-amber-800" },
@@ -23,11 +28,127 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   closed:        { label: "Encerrada", color: "bg-gray-100 text-gray-600" },
 };
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+interface LaunchModalProps {
+  quiz: { id: number; title: string; className?: string | null; discipline?: string | null };
+  onClose: () => void;
+  onLaunch: (data: { quizId: number; school?: string; className?: string; sessionDate?: string; mode: "kahoot" }) => void;
+  isPending: boolean;
+}
+
+function LaunchModal({ quiz, onClose, onLaunch, isPending }: LaunchModalProps) {
+  const [school, setSchool] = useState("");
+  const [className, setClassName] = useState(quiz.className ?? "");
+  const [sessionDate, setSessionDate] = useState(todayISO());
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onLaunch({
+      quizId: quiz.id,
+      school: school || undefined,
+      className: className || undefined,
+      sessionDate: sessionDate || undefined,
+      mode: "kahoot",
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-navy transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-[#e21b3c]/10 rounded-xl flex items-center justify-center">
+            <Gamepad2 className="w-5 h-5 text-[#e21b3c]" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold text-navy text-lg">Lançar Sessão</h2>
+            <p className="text-xs text-muted-foreground truncate max-w-[220px]">{quiz.title}</p>
+          </div>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-5">
+          Confirma os dados da turma antes de iniciar. Estes dados aparecerão no relatório pedagógico.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-navy mb-1 flex items-center gap-1.5">
+              <School className="w-4 h-4 text-teal" /> Escola
+            </label>
+            <input
+              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-background"
+              placeholder="Ex: EB 2,3 de Pesqueira"
+              value={school}
+              onChange={(e) => setSchool(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-navy mb-1 flex items-center gap-1.5">
+              <Users2 className="w-4 h-4 text-teal" /> Turma
+            </label>
+            <input
+              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-background"
+              placeholder="Ex: 9.º A"
+              value={className}
+              onChange={(e) => setClassName(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-navy mb-1 flex items-center gap-1.5">
+              <CalendarDays className="w-4 h-4 text-teal" /> Data da Sessão
+            </label>
+            <input
+              type="date"
+              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-background"
+              value={sessionDate}
+              onChange={(e) => setSessionDate(e.target.value)}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 border border-border rounded-xl py-2.5 text-sm font-semibold text-navy hover:bg-cream-dark transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="flex-1 bg-[#e21b3c] hover:bg-[#c01532] text-white font-bold py-2.5 rounded-xl text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {isPending ? (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Gamepad2 className="w-4 h-4" />
+              )}
+              Iniciar Jogo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const { data: quizzes, refetch: refetchQuizzes } = trpc.quizzes.list.useQuery(undefined, { enabled: isAuthenticated });
   const { data: sessions } = trpc.sessions.list.useQuery(undefined, { enabled: isAuthenticated });
+  const [launchQuiz, setLaunchQuiz] = useState<{ id: number; title: string; className?: string | null; discipline?: string | null } | null>(null);
 
   const deleteQuiz = trpc.quizzes.delete.useMutation({
     onSuccess: () => { refetchQuizzes(); toast.success("Quiz eliminado."); },
@@ -38,7 +159,7 @@ export default function Dashboard() {
     onError: (e) => toast.error(e.message),
   });
   const createKahootSession = trpc.sessions.create.useMutation({
-    onSuccess: (s) => navigate(`/kahoot/host/${s.id}`),
+    onSuccess: (s) => { setLaunchQuiz(null); navigate(`/kahoot/host/${s.id}`); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -65,10 +186,19 @@ export default function Dashboard() {
 
   const activeSessions = sessions?.filter((s) => s.status !== "closed") ?? [];
   const completedSessions = sessions?.filter((s) => s.status === "closed") ?? [];
-  const recentSessions = sessions?.slice(0, 5) ?? [];
 
   return (
     <div className="av-section animate-fade-in">
+      {/* Modal de lançamento */}
+      {launchQuiz && (
+        <LaunchModal
+          quiz={launchQuiz}
+          onClose={() => setLaunchQuiz(null)}
+          onLaunch={(data) => createKahootSession.mutate(data)}
+          isPending={createKahootSession.isPending}
+        />
+      )}
+
       {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -165,8 +295,7 @@ export default function Dashboard() {
 
                 {/* Botão principal: Jogar */}
                 <button
-                  onClick={() => createKahootSession.mutate({ quizId: q.id, mode: "kahoot" })}
-                  disabled={createKahootSession.isPending}
+                  onClick={() => setLaunchQuiz(q)}
                   className="w-full bg-[#e21b3c] hover:bg-[#c01532] active:scale-95 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-base transition-all mb-3 shadow-sm"
                 >
                   <Gamepad2 className="w-5 h-5" /> Jogar
@@ -212,6 +341,7 @@ export default function Dashboard() {
                       {new Date(s.createdAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })}
                       {" · "}
                       <span className="font-semibold text-navy">{s.participantCount} aluno(s)</span>
+                      {(s as any).className && <span className="ml-1 text-muted-foreground"> · {(s as any).className}</span>}
                     </p>
                   </div>
                 </div>
@@ -219,7 +349,7 @@ export default function Dashboard() {
                   href={`/quiz/${s.quizId}/stats`}
                   className="text-xs font-semibold text-teal border border-teal rounded-lg py-1.5 px-3 hover:bg-teal hover:text-white transition-colors w-fit"
                 >
-                  Ver relatório
+                  Ver Relatório
                 </Link>
               </div>
             ))}

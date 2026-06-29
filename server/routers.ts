@@ -286,6 +286,8 @@ export const appRouter = router({
           title: z.string().min(1),
           description: z.string().optional(),
           literaryWork: z.string().optional(),
+          excerpt: z.string().optional(),
+          theme: z.string().optional(),
           discipline: z.string().optional(),
           yearGroup: z.string().optional(),
           className: z.string().optional(),
@@ -309,6 +311,8 @@ export const appRouter = router({
           title: z.string().min(1).optional(),
           description: z.string().optional(),
           literaryWork: z.string().optional(),
+          excerpt: z.string().optional(),
+          theme: z.string().optional(),
           discipline: z.string().optional(),
           yearGroup: z.string().optional(),
           className: z.string().optional(),
@@ -411,6 +415,8 @@ export const appRouter = router({
         z.object({
           quizId: z.number(),
           school: z.string().optional(),
+          className: z.string().optional(),
+          sessionDate: z.string().optional(), // ISO date string
           mode: z.enum(["normal", "kahoot"]).optional().default("normal"),
         })
       )
@@ -430,6 +436,8 @@ export const appRouter = router({
           quizId: input.quizId,
           teacherId: ctx.user.id,
           school: input.school,
+          className: input.className,
+          sessionDate: input.sessionDate ? new Date(input.sessionDate) : new Date(),
           mode: input.mode,
           status: "waiting",
         });
@@ -646,11 +654,14 @@ export const appRouter = router({
         return {
           sessionCode: s.code,
           school: s.school,
+          className: (s as any).className ?? quiz?.className ?? "",
+          sessionDate: (s as any).sessionDate ?? s.createdAt,
           quizTitle: quiz?.title ?? "",
           literaryWork: quiz?.literaryWork ?? "",
+          excerpt: (quiz as any)?.excerpt ?? "",
+          theme: (quiz as any)?.theme ?? "",
           discipline: quiz?.discipline ?? "",
           yearGroup: quiz?.yearGroup ?? "",
-          className: quiz?.className ?? "",
           date: s.createdAt,
           totalParticipants: s.participantCount,
           questionStats,

@@ -132,3 +132,15 @@
 - [x] StudentSession: corrigir SCALE_LABELS para 4 opções concordo/discordo
 - [x] Coordination: remover imports não usados
 - [x] KahootHost: mostrar pergunta aberta no ecrã de resultados com lista de respostas
+
+## Melhorias pedagógicas (documentos — Jun 2026)
+
+- [x] Corrigir bug escala 5→4 opções no StudentSession.tsx
+- [x] Adicionar campos turma e data ao lançar sessão (modal antes do jogo)
+- [x] Guardar turma/data na tabela sessions (schema + migração)
+- [x] Completar getCoordinationStats com join quizzes+users (nº professores, disciplinas, obras, taxa de resposta)
+- [x] Painel de Coordenação: adicionar KPIs de professores ativos, disciplinas e obras mais usadas
+- [x] Melhorar exportação de relatório no QuizStats (HTML estruturado como SessionManager)
+- [x] Adicionar ecrã de boas-vindas com regras de segurança no KahootPlayer
+- [x] Adicionar campos excerto literário e tema central no QuizEditor
+- [x] Guardar excerto e tema na tabela quizzes (schema + migração)

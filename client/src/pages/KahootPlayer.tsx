@@ -120,16 +120,39 @@ export default function KahootPlayer() {
 
       {/* ── A AGUARDAR ── */}
       {phase === "waiting" && (
-        <div className="text-center text-white">
-          <div className="text-6xl mb-6 animate-bounce">🎮</div>
-          <h1 className="text-3xl font-display font-black text-gold mb-2">Aula Viva</h1>
-          <p className="text-white/60 mb-8">Modo Jogo</p>
-          <div className="bg-white/10 rounded-2xl p-8 mb-6">
-            <div className="w-8 h-8 border-4 border-teal border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-white/80 font-semibold">A aguardar que o professor inicie o jogo...</p>
+        <div className="text-center text-white max-w-sm w-full">
+          <div className="text-5xl mb-4 animate-bounce">🎮</div>
+          <h1 className="text-3xl font-display font-black text-gold mb-1">Aula Viva</h1>
+          <p className="text-white/60 mb-6 text-sm">Modo Jogo Interativo</p>
+
+          {/* Regras de participação segura */}
+          <div className="bg-white/10 rounded-2xl p-5 mb-5 text-left space-y-3">
+            <p className="text-white font-bold text-sm mb-3 text-center">Antes de começar, lê com atenção:</p>
+            <div className="flex items-start gap-3">
+              <span className="text-teal text-lg flex-shrink-0">🔒</span>
+              <p className="text-white/80 text-sm">As tuas respostas são <strong className="text-white">completamente anónimas</strong>. O professor não sabe quem respondeu o quê.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-teal text-lg flex-shrink-0">🤔</span>
+              <p className="text-white/80 text-sm">Não há respostas certas ou erradas. O importante é <strong className="text-white">refletir honestamente</strong>.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-teal text-lg flex-shrink-0">👋</span>
+              <p className="text-white/80 text-sm">Se alguma pergunta te fizer sentir desconfortável, podes sempre clicar em <strong className="text-white">&ldquo;Prefiro não responder&rdquo;</strong>.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-teal text-lg flex-shrink-0">📞</span>
+              <p className="text-white/80 text-sm">Se precisares de apoio, fala com o teu professor ou liga para a <strong className="text-white">Linha SOS Estudante: 800 209 080</strong> (gratuita, 24h).</p>
+            </div>
           </div>
-          <div className="flex items-center justify-center gap-2 text-white/40 text-sm">
-            <Users className="w-4 h-4" />
+
+          {/* Indicador de espera */}
+          <div className="bg-white/5 rounded-xl px-5 py-3 flex items-center justify-center gap-3">
+            <div className="w-5 h-5 border-2 border-teal border-t-transparent rounded-full animate-spin flex-shrink-0" />
+            <p className="text-white/70 text-sm">A aguardar que o professor inicie...</p>
+          </div>
+          <div className="flex items-center justify-center gap-2 text-white/40 text-xs mt-3">
+            <Users className="w-3.5 h-3.5" />
             <span>{kahootState?.participantCount ?? 0} jogadores na sala</span>
           </div>
         </div>

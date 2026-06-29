@@ -432,33 +432,106 @@ export async function getCoordinationStats(filters?: {
   yearGroup?: string;
 }) {
   const db = await getDb();
-  if (!db) return { totalSessions: 0, totalParticipants: 0, byDiscipline: [], bySchool: [] };
+  if (!db) return {
+    totalSessions: 0,
+    totalParticipants: 0,
+    totalTeachers: 0,
+    avgResponseRate: 0,
+    bySchool: [],
+    byDiscipline: [],
+    byTheme: [],
+    topWorks: [],
+  };
 
-  const conditions = [];
-  if (filters?.school) conditions.push(eq(sessions.school, filters.school));
+  // Buscar todas as sessões com join aos quizzes
+  const allSessionsRaw = await db
+    .select()
+    .from(sessions)
+    .leftJoin(quizzes, eq(sessions.quizId, quizzes.id));
+
+  // Aplicar filtros
+  let filtered = allSessionsRaw;
+  if (filters?.school) {
+    filtered = filtered.filter((r) => r.sessions.school === filters.school);
+  }
   if (filters?.discipline) {
-    // join com quizzes para filtrar por disciplina
+    filtered = filtered.filter((r) => r.quizzes?.discipline === filters.discipline);
+  }
+  if (filters?.yearGroup) {
+    filtered = filtered.filter((r) => r.quizzes?.yearGroup === filters.yearGroup);
   }
 
-  const allSessions =
-    conditions.length > 0
-      ? await db.select().from(sessions).where(and(...conditions))
-      : await db.select().from(sessions);
+  const totalSessions = filtered.length;
+  const totalParticipants = filtered.reduce((s, r) => s + r.sessions.participantCount, 0);
 
-  const totalSessions = allSessions.length;
-  const totalParticipants = allSessions.reduce((s, r) => s + r.participantCount, 0);
+  // Número de professores únicos
+  const teacherIds = new Set(filtered.map((r) => r.sessions.teacherId));
+  const totalTeachers = teacherIds.size;
+
+  // Taxa média de resposta: participantes / (perguntas * participantes) — simplificado como média de participantCount
+  const avgParticipants = totalSessions > 0 ? Math.round(totalParticipants / totalSessions) : 0;
 
   // Agrupar por escola
   const schoolMap: Record<string, { sessions: number; participants: number }> = {};
-  for (const s of allSessions) {
-    const key = s.school ?? "Não especificada";
+  for (const r of filtered) {
+    const key = r.sessions.school ?? "Não especificada";
     if (!schoolMap[key]) schoolMap[key] = { sessions: 0, participants: 0 };
     schoolMap[key].sessions++;
-    schoolMap[key].participants += s.participantCount;
+    schoolMap[key].participants += r.sessions.participantCount;
   }
-  const bySchool = Object.entries(schoolMap).map(([school, v]) => ({ school, ...v }));
+  const bySchool = Object.entries(schoolMap)
+    .map(([school, v]) => ({ school, ...v }))
+    .sort((a, b) => b.participants - a.participants);
 
-  return { totalSessions, totalParticipants, bySchool, byDiscipline: [] };
+  // Agrupar por disciplina
+  const disciplineMap: Record<string, { sessions: number; participants: number }> = {};
+  for (const r of filtered) {
+    const key = r.quizzes?.discipline ?? "Não especificada";
+    if (!disciplineMap[key]) disciplineMap[key] = { sessions: 0, participants: 0 };
+    disciplineMap[key].sessions++;
+    disciplineMap[key].participants += r.sessions.participantCount;
+  }
+  const byDiscipline = Object.entries(disciplineMap)
+    .map(([discipline, v]) => ({ discipline, ...v }))
+    .sort((a, b) => b.sessions - a.sessions)
+    .slice(0, 8);
+
+  // Agrupar por tema
+  const themeMap: Record<string, number> = {};
+  for (const r of filtered) {
+    const key = (r.quizzes as any)?.theme ?? null;
+    if (key) {
+      themeMap[key] = (themeMap[key] ?? 0) + 1;
+    }
+  }
+  const byTheme = Object.entries(themeMap)
+    .map(([theme, count]) => ({ theme, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
+  // Obras mais trabalhadas
+  const worksMap: Record<string, number> = {};
+  for (const r of filtered) {
+    const key = r.quizzes?.literaryWork ?? null;
+    if (key) {
+      worksMap[key] = (worksMap[key] ?? 0) + 1;
+    }
+  }
+  const topWorks = Object.entries(worksMap)
+    .map(([work, count]) => ({ work, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return {
+    totalSessions,
+    totalParticipants,
+    totalTeachers,
+    avgParticipants,
+    bySchool,
+    byDiscipline,
+    byTheme,
+    topWorks,
+  };
 }
 
 // ─── Modo Kahoot ──────────────────────────────────────────────────────────────
