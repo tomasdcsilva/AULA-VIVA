@@ -137,6 +137,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <span>
           Aula Viva · Projeto PesqueirAmiga · Master HBM Research, LDA
         </span>
+        <span className="mx-2">·</span>
+        <a href="/manual" className="text-white/40 hover:text-white/70 underline transition-colors">
+          Manual de Utilização
+        </a>
       </footer>
     </div>
   );

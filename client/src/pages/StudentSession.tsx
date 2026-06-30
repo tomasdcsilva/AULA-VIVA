@@ -45,6 +45,7 @@ export default function StudentSession() {
   const [submitted, setSubmitted] = useState<Record<number, boolean>>({});
   const [chatMessage, setChatMessage] = useState("");
   const [showStats, setShowStats] = useState(false);
+  const [showSupportPanel, setShowSupportPanel] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -95,10 +96,7 @@ export default function StudentSession() {
       setChatMessage("");
       refetchChat();
       if (r.isSensitive) {
-        toast("A tua mensagem foi sinalizada. Se precisares de apoio, fala com o teu professor.", {
-          icon: "💙",
-          duration: 6000,
-        });
+        setShowSupportPanel(true);
       }
     },
     onError: (e) => toast.error(e.message),
@@ -302,6 +300,51 @@ export default function StudentSession() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Painel de Apoio — aparece quando mensagem sensível é detetada */}
+        {showSupportPanel && (
+          <div className="mt-6 animate-fade-in">
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl p-5">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">💙</div>
+                <div className="flex-1">
+                  <h3 className="font-display font-bold text-blue-900 text-base mb-1">Estamos aqui para ajudar</h3>
+                  <p className="text-sm text-blue-800 mb-3">A tua mensagem foi recebida. Se estiveres a passar por uma situação difícil, não estás sozinho/a. Podes pedir ajuda de forma discreta.</p>
+                  <div className="space-y-2">
+                    <div className="bg-white rounded-xl px-4 py-2.5 flex items-center gap-3">
+                      <span className="text-lg">📞</span>
+                      <div>
+                        <p className="text-xs font-semibold text-blue-900">Linha de Apoio à Vítima</p>
+                        <p className="text-sm font-bold text-blue-700">116 006</p>
+                        <p className="text-xs text-muted-foreground">Gratuita · 24h · Confidencial</p>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl px-4 py-2.5 flex items-center gap-3">
+                      <span className="text-lg">💬</span>
+                      <div>
+                        <p className="text-xs font-semibold text-blue-900">Psicólogo/a da escola</p>
+                        <p className="text-xs text-muted-foreground">Podes pedir para falar em privado — é confidencial</p>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl px-4 py-2.5 flex items-center gap-3">
+                      <span className="text-lg">🌐</span>
+                      <div>
+                        <p className="text-xs font-semibold text-blue-900">APAV — Apoio à Vítima</p>
+                        <p className="text-xs text-blue-600">apav.pt</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSupportPanel(false)}
+                    className="mt-3 text-xs text-blue-600 underline"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

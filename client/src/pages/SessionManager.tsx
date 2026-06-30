@@ -3,7 +3,7 @@ import PedagogicBox from "@/components/PedagogicBox";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft, Play, Square, MessageCircle, PauseCircle, PlayCircle,
-  Eye, EyeOff, Flag, Star, BarChart3, FileText, Copy, Users, Monitor
+  Eye, EyeOff, Flag, Star, BarChart3, FileText, Copy, Users, Monitor, Sheet
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useParams } from "wouter";
@@ -468,6 +468,65 @@ export default function SessionManager() {
             >
               <FileText className="w-4 h-4" /> Exportar HTML
             </button>
+              <button
+                onClick={() => {
+                  // Exportar Excel com dados da sessão
+                  import("xlsx").then((XLSX) => {
+                    const wb = XLSX.utils.book_new();
+
+                    // Folha 1: Informações da Sessão
+                    const infoData = [
+                      ["Campo", "Valor"],
+                      ["Quiz", report.quizTitle],
+                      ["Código da Sessão", report.sessionCode],
+                      ["Turma", report.className || "—"],
+                      ["Disciplina", report.discipline || "—"],
+                      ["Obra Literária", report.literaryWork || "—"],
+                      ["Escola", report.school || "—"],
+                      ["Nº Participantes", report.totalParticipants],
+                      ["Taxa de Resposta", report.questionStats.length > 0
+                        ? `${Math.round((report.questionStats[0].stats.reduce((a, s) => a + s.count, 0) / Math.max(report.totalParticipants, 1)) * 100)}%`
+                        : "N/A"],
+                      ["Mensagens no Chat", report.chatSummary.totalMessages],
+                      ["Mensagens Sensíveis", report.chatSummary.sensitiveCount],
+                      ["Data de Exportação", new Date().toLocaleDateString("pt-PT")],
+                    ];
+                    const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+                    XLSX.utils.book_append_sheet(wb, wsInfo, "Sessão");
+
+                    // Folha 2: Resultados por Pergunta
+                    const resultsData: (string | number)[][] = [["Pergunta", "Resposta", "Votos", "Percentagem (%)", "Total Respostas"]];
+                    report.questionStats.forEach((qs) => {
+                      qs.stats.forEach((s, i) => {
+                        resultsData.push([
+                          i === 0 ? qs.question : "",
+                          s.answer,
+                          s.count,
+                          s.percentage,
+                          qs.stats.reduce((acc, s) => acc + s.count, 0),
+                        ]);
+                      });
+                      if (qs.stats.length === 0) {
+                        resultsData.push([qs.question, "Sem respostas", 0, 0, 0]);
+                      }
+                    });
+                    const wsResults = XLSX.utils.aoa_to_sheet(resultsData);
+                    XLSX.utils.book_append_sheet(wb, wsResults, "Resultados");
+
+                    // Folha 3: Sugestões
+                    const suggestionsData: string[][] = [["Sugestões para a Próxima Aula"]];
+                    report.suggestions.forEach((s) => suggestionsData.push([s]));
+                    const wsSuggestions = XLSX.utils.aoa_to_sheet(suggestionsData);
+                    XLSX.utils.book_append_sheet(wb, wsSuggestions, "Sugestões");
+
+                    XLSX.writeFile(wb, `relatorio_${report.sessionCode}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                    toast.success("Excel descarregado!");
+                  }).catch(() => toast.error("Erro ao gerar Excel"));
+                }}
+                className="bg-green-600 text-white font-semibold px-5 py-3 rounded-xl hover:bg-green-700 transition-colors flex items-center gap-2"
+              >
+                <Sheet className="w-4 h-4" /> Exportar Excel
+              </button>
             </div>
           </div>
         )}

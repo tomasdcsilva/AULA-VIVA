@@ -188,8 +188,15 @@
 
 ## Recuperação de Password com Código de 4 Dígitos (Jun 2026)
 
-- [ ] Backend: gerar código de 4 dígitos em vez de token URL, guardar em resetToken
-- [ ] Backend: endpoint auth.verifyResetCode para validar o código e devolver token temporário
-- [ ] Backend: endpoint auth.resetPasswordWithCode para redefinir password com código validado
-- [ ] Email: mostrar o código de 4 dígitos em destaque no email
-- [ ] Frontend: ecrã após "Email enviado!" com input de 4 dígitos + nova password
+- [x] Backend: gerar código de 4 dígitos em vez de token URL, guardar em resetToken
+- [x] Backend: endpoint auth.verifyResetCode para validar o código e devolver token temporário
+- [x] Backend: endpoint auth.resetPasswordWithCode para redefinir password com código validado
+- [x] Email: mostrar o código de 4 dígitos em destaque no email
+- [x] Frontend: ecrã após "Email enviado!" com input de 4 dígitos + nova password
+
+## Conformidade Total com Documentos PesqueirAmiga (Jun 2026)
+
+- [x] Chat: deteção de palavras-chave sensíveis (violência, ajuda, medo) e exibição de mensagem de apoio ao aluno
+- [x] Chat: indicação de canais de apoio visíveis (linha de apoio, psicólogo escolar)
+- [x] Relatório: exportação em Excel/CSV com dados da sessão e respostas por pergunta
+- [x] Manual de utilização para professores disponível na plataforma (página /manual)
