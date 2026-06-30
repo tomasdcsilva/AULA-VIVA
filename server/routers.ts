@@ -16,6 +16,7 @@ import {
   getAllResponsesForSession,
   getChatMessageById,
   getChatMessages,
+  getActiveTeachers,
   getCoordinationStats,
   getKahootLeaderboard,
   getKahootOpenAnswers,
@@ -939,6 +940,12 @@ export const appRouter = router({
         const { sessions: sessTable } = await import("../drizzle/schema");
         const { desc: descFn } = await import("drizzle-orm");
         return db.select().from(sessTable).orderBy(descFn(sessTable.createdAt)).limit(100);
+      }),
+
+    teachers: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        return getActiveTeachers();
       }),
   }),
 });

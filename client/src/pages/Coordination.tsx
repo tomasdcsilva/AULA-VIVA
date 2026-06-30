@@ -11,6 +11,8 @@ import {
   GraduationCap,
   BookMarked,
   Tag,
+  Mail,
+  UserCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
@@ -65,6 +67,10 @@ export default function Coordination() {
   );
 
   const { data: sessions } = trpc.coordination.sessions.useQuery(undefined, {
+    enabled: isAuthenticated && user?.role === "admin",
+  });
+
+  const { data: teachers } = trpc.coordination.teachers.useQuery(undefined, {
     enabled: isAuthenticated && user?.role === "admin",
   });
 
@@ -313,6 +319,62 @@ export default function Coordination() {
           <BarChart3 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">Ainda não há sessões registadas na plataforma.</p>
           <p className="text-xs text-muted-foreground mt-1">Os indicadores aparecerão aqui assim que os professores realizarem as primeiras sessões.</p>
+        </div>
+      )}
+
+      {/* Tabela de professores ativos */}
+      {teachers && teachers.length > 0 && (
+        <div className="av-card mt-6 overflow-hidden p-0">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="font-display font-bold text-navy flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-teal" /> Professores com Atividade Registada
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Professores que já realizaram pelo menos uma sessão na plataforma.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-cream-dark">
+                <tr>
+                  <th className="text-left px-4 py-3 font-semibold text-navy">Nome</th>
+                  <th className="text-left px-4 py-3 font-semibold text-navy">Email</th>
+                  <th className="text-left px-4 py-3 font-semibold text-navy">Escola(s)</th>
+                  <th className="text-right px-4 py-3 font-semibold text-navy">Sessões</th>
+                  <th className="text-right px-4 py-3 font-semibold text-navy">Participantes</th>
+                  <th className="text-left px-4 py-3 font-semibold text-navy">Última sessão</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teachers.map((t) => (
+                  <tr key={t.userId} className="border-t border-border hover:bg-cream-dark/40 transition-colors">
+                    <td className="px-4 py-3 font-semibold text-navy">{t.name || "—"}</td>
+                    <td className="px-4 py-3">
+                      <a
+                        href={`mailto:${t.email}`}
+                        className="flex items-center gap-1.5 text-teal hover:underline"
+                      >
+                        <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                        {t.email}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {t.schools.length > 0
+                        ? t.schools.join(", ")
+                        : <span className="italic text-xs">Não especificada</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-navy">{t.totalSessions}</td>
+                    <td className="px-4 py-3 text-right text-navy">{t.totalParticipants}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
+                      {t.lastSession
+                        ? new Date(t.lastSession).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" })
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

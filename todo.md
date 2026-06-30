@@ -159,3 +159,8 @@
 ## Relatório Pedagógico — Redesign (Jun 2026)
 
 - [x] Redesenhar relatório HTML exportado com formatação profissional (capa, 6 secções, gráficos de barras, tipografia limpa)
+
+## Painel de Coordenação — Professores e Escolas (Jun 2026)
+
+- [x] Backend: coordination.teachers — lista professores com email, escola, nº sessões, nº participantes, última sessão
+- [x] Frontend: tabela de professores ativos no painel de coordenação com email e escola

@@ -564,6 +564,70 @@ export async function getCoordinationStats(filters?: {
   };
 }
 
+// ─── Lista de professores ativos (para coordenação) ─────────────────────────
+export async function getActiveTeachers() {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Buscar todos os professores que já fizeram pelo menos uma sessão
+  const rows = await db
+    .select({
+      userId: users.id,
+      name: users.name,
+      email: users.email,
+      sessionId: sessions.id,
+      school: sessions.school,
+      participantCount: sessions.participantCount,
+      createdAt: sessions.createdAt,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(sessions.teacherId, users.id))
+    .orderBy(desc(sessions.createdAt));
+
+  // Agregar por professor
+  const teacherMap: Record<number, {
+    userId: number;
+    name: string;
+    email: string;
+    schools: Set<string>;
+    totalSessions: number;
+    totalParticipants: number;
+    lastSession: Date | null;
+  }> = {};
+
+  for (const row of rows) {
+    if (!teacherMap[row.userId]) {
+      teacherMap[row.userId] = {
+        userId: row.userId,
+        name: row.name ?? "",
+        email: row.email ?? "",
+        schools: new Set(),
+        totalSessions: 0,
+        totalParticipants: 0,
+        lastSession: null,
+      };
+    }
+    const t = teacherMap[row.userId];
+    t.totalSessions++;
+    t.totalParticipants += row.participantCount ?? 0;
+    if (row.school) t.schools.add(row.school);
+    const d = row.createdAt ? new Date(row.createdAt) : null;
+    if (d && (!t.lastSession || d > t.lastSession)) t.lastSession = d;
+  }
+
+  return Object.values(teacherMap)
+    .map((t) => ({
+      userId: t.userId,
+      name: t.name,
+      email: t.email,
+      schools: Array.from(t.schools),
+      totalSessions: t.totalSessions,
+      totalParticipants: t.totalParticipants,
+      lastSession: t.lastSession,
+    }))
+    .sort((a, b) => b.totalSessions - a.totalSessions);
+}
+
 // ─── Modo Kahoot ──────────────────────────────────────────────────────────────
 
 /** Avança para a próxima pergunta e regista o timestamp de início */
