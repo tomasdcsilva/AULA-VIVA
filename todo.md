@@ -155,3 +155,7 @@
 - [x] QuestionBank: sugestões do sistema aparecem como read-only (sem editar/eliminar)
 - [x] QuestionBank: perguntas do professor aparecem com ações de editar/eliminar
 - [x] QuestionBank: adicionar ação 'Editar' às perguntas do professor (formulário pré-preenchido)
+
+## Relatório Pedagógico — Redesign (Jun 2026)
+
+- [x] Redesenhar relatório HTML exportado com formatação profissional (capa, 6 secções, gráficos de barras, tipografia limpa)

@@ -242,14 +242,13 @@ export default function Dashboard() {
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                     A decorrer
                   </span>
-                  {s.quizTitle && (
-                    <p className="font-semibold text-navy text-sm mb-0.5">{s.quizTitle}</p>
-                  )}
-                  <p className="font-bold text-navy text-lg tracking-widest font-mono">{s.code}</p>
+                  <p className="font-semibold text-navy text-base mb-0.5">{s.quizTitle ?? s.code}</p>
                   <p className="text-xs text-muted-foreground">
+                    {s.className && <span className="text-teal-700 font-medium">{s.className}</span>}
+                    {s.className && " · "}
                     {s.participantCount} aluno(s) ligado(s)
-                    {s.className && <span className="ml-2 text-teal-700">· {s.className}</span>}
                   </p>
+                  <p className="text-xs text-muted-foreground font-mono mt-0.5">Código: {s.code}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link href={`/kahoot/host/${s.id}`} className="av-btn-primary text-sm px-4 py-2">
@@ -363,12 +362,13 @@ export default function Dashboard() {
                     <Gamepad2 className="w-5 h-5 text-navy" />
                   </div>
                   <div>
-                    <p className="font-mono font-bold text-navy tracking-widest text-sm">{s.code}</p>
+                    <p className="font-semibold text-navy text-sm">{s.quizTitle ?? s.code}</p>
                     <p className="text-xs text-muted-foreground">
+                      {(s as any).className && <span className="font-medium text-teal-700">{(s as any).className}</span>}
+                      {(s as any).className && " · "}
                       {new Date(s.createdAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })}
                       {" · "}
                       <span className="font-semibold text-navy">{s.participantCount} aluno(s)</span>
-                      {(s as any).className && <span className="ml-1 text-muted-foreground"> · {(s as any).className}</span>}
                     </p>
                   </div>
                 </div>

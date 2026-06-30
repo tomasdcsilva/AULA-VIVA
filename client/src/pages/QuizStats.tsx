@@ -36,81 +36,317 @@ const THEME_LABELS: Record<string, string> = {
 function exportStructuredReport(quiz: any, sessions: any[]) {
   const dateStr = new Date().toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" });
   const themeLabel = quiz.theme ? THEME_LABELS[quiz.theme] ?? quiz.theme : null;
+  const COLORS = ["#e21b3c", "#1368ce", "#d89e00", "#26890c", "#7c3aed", "#0891b2"];
 
-  const sessionsHtml = sessions.map((session: any) => {
+  const sessionsHtml = sessions.map((session: any, si: number) => {
+    const totalParticipants = session.participantCount ?? 0;
     const totalAnswers = session.questionStats.reduce((sum: number, qs: any) =>
       sum + qs.stats.reduce((s: number, r: any) => s + r.count, 0), 0);
+    const answeredQs = session.questionStats.filter((qs: any) => qs.stats.reduce((s: number, r: any) => s + r.count, 0) > 0).length;
     const responseRate = session.questionStats.length > 0
-      ? Math.round((session.questionStats.filter((qs: any) => qs.stats.reduce((s: number, r: any) => s + r.count, 0) > 0).length / session.questionStats.length) * 100)
-      : 0;
+      ? Math.round((answeredQs / session.questionStats.length) * 100) : 0;
+    const sessionDateStr = session.sessionDate
+      ? new Date(session.sessionDate).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })
+      : session.createdAt
+        ? new Date(session.createdAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })
+        : "";
 
+    // Secção 1 — Identificação
+    const identHtml = `
+      <div class="section">
+        <div class="section-title">1. Identificação da Sessão</div>
+        <table class="ident-table">
+          <tr><td class="ident-label">Data</td><td>${sessionDateStr || "—"}</td></tr>
+          <tr><td class="ident-label">Turma</td><td>${session.className || "—"}</td></tr>
+          <tr><td class="ident-label">Disciplina</td><td>${quiz.discipline || "—"}</td></tr>
+          <tr><td class="ident-label">Ano de escolaridade</td><td>${quiz.yearGroup || "—"}</td></tr>
+          <tr><td class="ident-label">Obra / Tema</td><td>${quiz.literaryWork || themeLabel || "—"}</td></tr>
+          <tr><td class="ident-label">Modo</td><td>${session.mode === "kahoot" ? "Modo Jogo (Kahoot)" : "Modo Normal"}</td></tr>
+        </table>
+      </div>`;
+
+    // Secção 2 — Participação
+    const rateBarWidth = responseRate;
+    const participHtml = `
+      <div class="section">
+        <div class="section-title">2. Participação</div>
+        <div class="kpi-row">
+          <div class="kpi-box"><div class="kpi-num" style="color:#2a9d8f">${totalParticipants}</div><div class="kpi-lbl">Alunos presentes</div></div>
+          <div class="kpi-box"><div class="kpi-num" style="color:#1a2e4a">${totalAnswers}</div><div class="kpi-lbl">Respostas dadas</div></div>
+          <div class="kpi-box"><div class="kpi-num" style="color:#1a2e4a">${session.questionStats.length}</div><div class="kpi-lbl">Questões no quiz</div></div>
+          <div class="kpi-box"><div class="kpi-num" style="color:${responseRate >= 80 ? '#26890c' : responseRate >= 50 ? '#d89e00' : '#e21b3c'}">${responseRate}%</div><div class="kpi-lbl">Taxa de resposta</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Taxa de resposta</div>
+          <div style="background:#e8e0d0;border-radius:4px;height:10px;overflow:hidden">
+            <div style="height:100%;width:${rateBarWidth}%;background:#2a9d8f;border-radius:4px"></div>
+          </div>
+        </div>
+      </div>`;
+
+    // Secção 3 — Resultados por pergunta
     const questionsHtml = session.questionStats.map((qs: any, qi: number) => {
       const totalQ = qs.stats.reduce((s: number, r: any) => s + r.count, 0);
       const isOpen = qs.type === "open";
-      const answersHtml = isOpen
-        ? qs.stats.map((r: any) => `<li style="margin-bottom:4px;font-style:italic;color:#555">“${r.answer}”</li>`).join("")
-        : qs.options?.map((opt: string, oi: number) => {
-            const stat = qs.stats.find((s: any) => s.answer === String(oi));
-            const count = stat?.count ?? 0;
-            const pct = totalQ > 0 ? Math.round((count / totalQ) * 100) : 0;
-            return `<div style="margin-bottom:4px"><span style="font-weight:600">${opt}</span>: ${count} (${pct}%)</div>`;
-          }).join("") ?? "";
-      return `<div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #eee">
-        <p style="font-weight:600;color:#1a2e4a;margin-bottom:6px">${qi + 1}. ${qs.text}</p>
-        ${isOpen ? `<ul style="padding-left:16px">${answersHtml}</ul>` : answersHtml}
-        <p style="font-size:11px;color:#888;margin-top:4px">${totalQ} resposta(s)</p>
+
+      if (isOpen) {
+        const answersHtml = qs.stats.length > 0
+          ? qs.stats.map((r: any) => `<div class="open-answer">"${r.answer}"</div>`).join("")
+          : `<div style="color:#888;font-style:italic;font-size:12px">Sem respostas registadas.</div>`;
+        return `<div class="question-block">
+          <div class="q-num">${qi + 1}</div>
+          <div class="q-body">
+            <div class="q-text">${qs.text}</div>
+            <div class="q-type-badge">Resposta aberta</div>
+            <div style="margin-top:8px">${answersHtml}</div>
+            <div class="q-total">${totalQ} resposta(s)</div>
+          </div>
+        </div>`;
+      }
+
+      const barsHtml = (qs.options ?? []).map((opt: string, oi: number) => {
+        const stat = qs.stats.find((s: any) => s.answer === String(oi));
+        const count = stat?.count ?? 0;
+        const pct = totalQ > 0 ? Math.round((count / totalQ) * 100) : 0;
+        const color = COLORS[oi % COLORS.length];
+        return `<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <span style="font-size:12px;color:#333;max-width:75%">${opt}</span>
+            <span style="font-size:12px;font-weight:700;color:#1a2e4a">${count} (${pct}%)</span>
+          </div>
+          <div style="background:#e8e0d0;border-radius:3px;height:14px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:3px"></div>
+          </div>
+        </div>`;
+      }).join("");
+
+      return `<div class="question-block">
+        <div class="q-num">${qi + 1}</div>
+        <div class="q-body">
+          <div class="q-text">${qs.text}</div>
+          <div class="q-type-badge">${qs.type === "scale" ? "Escala de concordância" : "Escolha múltipla"}</div>
+          <div style="margin-top:10px">${barsHtml}</div>
+          <div class="q-total">${totalQ} resposta(s)</div>
+        </div>
       </div>`;
     }).join("");
 
-    const sessionDateStr = session.createdAt
-      ? new Date(session.createdAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })
-      : "";
+    const resultsHtml = `
+      <div class="section">
+        <div class="section-title">3. Resultados do Quiz</div>
+        ${questionsHtml}
+      </div>`;
 
-    return `<div style="page-break-before:always;padding:32px 0">
-      <h2 style="color:#1a2e4a;font-size:18px;margin-bottom:4px">Sessão ${session.code}</h2>
-      <p style="color:#666;font-size:12px;margin-bottom:16px">${sessionDateStr} &middot; ${session.participantCount} aluno(s) &middot; ${responseRate}% taxa de resposta</p>
-      ${questionsHtml}
+    // Secção 4 — Pontos críticos
+    const criticalQs = session.questionStats
+      .filter((qs: any) => qs.type !== "open")
+      .map((qs: any) => {
+        const total = qs.stats.reduce((s: number, r: any) => s + r.count, 0);
+        if (total === 0) return null;
+        const pcts = (qs.options ?? []).map((_: any, oi: number) => {
+          const stat = qs.stats.find((s: any) => s.answer === String(oi));
+          return (stat?.count ?? 0) / total;
+        });
+        const mean = pcts.reduce((a: number, b: number) => a + b, 0) / (pcts.length || 1);
+        const variance = pcts.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / (pcts.length || 1);
+        return { ...qs, dispersion: Math.sqrt(variance), total };
+      })
+      .filter((qs: any) => qs && qs.dispersion > 0.25)
+      .sort((a: any, b: any) => b.dispersion - a.dispersion)
+      .slice(0, 3);
+
+    const criticalHtml = criticalQs.length > 0
+      ? `<div class="section critical-section">
+          <div class="section-title" style="color:#b45309">4. Pontos Críticos</div>
+          <p style="font-size:12px;color:#666;margin-bottom:12px">Perguntas com maior dispersão de respostas — indicam temas onde a turma está mais dividida e que merecem debate orientado.</p>
+          ${criticalQs.map((qs: any) => `
+            <div class="critical-item">
+              <div class="critical-icon">⚠</div>
+              <div>
+                <div style="font-weight:600;font-size:13px;color:#1a2e4a">${qs.text}</div>
+                <div style="font-size:11px;color:#888;margin-top:2px">Dispersão elevada · ${qs.total} resposta(s) · Sugestão: retomar em debate presencial</div>
+              </div>
+            </div>`).join("")}
+        </div>`
+      : `<div class="section">
+          <div class="section-title">4. Pontos Críticos</div>
+          <p style="font-size:12px;color:#888;font-style:italic">Não foram identificadas perguntas com dispersão significativa nesta sessão.</p>
+        </div>`;
+
+    // Secção 5 — Chat
+    const chatSummary = session.chatSummary;
+    const chatHtml = chatSummary?.totalMessages > 0
+      ? `<div class="section">
+          <div class="section-title">5. Resumo do Chat</div>
+          <div class="kpi-row" style="margin-bottom:12px">
+            <div class="kpi-box"><div class="kpi-num" style="color:#1a2e4a;font-size:24px">${chatSummary.totalMessages}</div><div class="kpi-lbl">Mensagens</div></div>
+            ${chatSummary.sensitiveCount > 0 ? `<div class="kpi-box"><div class="kpi-num" style="color:#e21b3c;font-size:24px">${chatSummary.sensitiveCount}</div><div class="kpi-lbl">Sinalizadas</div></div>` : ""}
+            ${chatSummary.highlightedMessages?.length > 0 ? `<div class="kpi-box"><div class="kpi-num" style="color:#d89e00;font-size:24px">${chatSummary.highlightedMessages.length}</div><div class="kpi-lbl">Destacadas</div></div>` : ""}
+          </div>
+          ${chatSummary.highlightedMessages?.length > 0 ? `
+            <div style="margin-top:8px">
+              <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Excertos anonimizados</div>
+              ${chatSummary.highlightedMessages.map((msg: string) => `<div class="chat-excerpt">"${msg}"</div>`).join("")}
+            </div>` : ""}
+        </div>`
+      : `<div class="section">
+          <div class="section-title">5. Resumo do Chat</div>
+          <p style="font-size:12px;color:#888;font-style:italic">Não houve mensagens no chat nesta sessão.</p>
+        </div>`;
+
+    // Secção 6 — Pistas de reflexão
+    const reflectionHtml = `
+      <div class="section reflection-section">
+        <div class="section-title" style="color:#1a6b5e">6. Pistas para a Próxima Aula</div>
+        <ul class="reflection-list">
+          ${criticalQs.length > 0
+            ? `<li>Retoma as perguntas com maior dispersão em debate presencial, pedindo aos alunos que justifiquem a sua posição.</li>
+               <li>Usa as respostas abertas como ponto de partida para uma discussão em grupo sobre alternativas saudáveis.</li>`
+            : `<li>As respostas foram consistentes. Podes avançar para o tema seguinte ou aprofundar com uma pergunta aberta em aula.</li>`}
+          <li>Recorda aos alunos que não há respostas certas — o objetivo é refletir e construir perspetivas críticas.</li>
+          <li>Considera partilhar os resultados agregados com a turma no início da próxima aula como ponto de partida para debate.</li>
+        </ul>
+      </div>`;
+
+    const pageBreak = si > 0 ? `style="page-break-before:always"` : "";
+    return `<div class="session-wrapper" ${pageBreak}>
+      <div class="session-header">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#2a9d8f;margin-bottom:4px">Sessão</div>
+            <div style="font-size:20px;font-weight:900;color:#1a2e4a">${quiz.title}${session.className ? ` — ${session.className}` : ""}</div>
+            <div style="font-size:12px;color:#666;margin-top:2px">${sessionDateStr} · Código: ${session.code}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:28px;font-weight:900;color:#2a9d8f">${totalParticipants}</div>
+            <div style="font-size:11px;color:#888">alunos</div>
+          </div>
+        </div>
+      </div>
+      ${identHtml}${participHtml}${resultsHtml}${criticalHtml}${chatHtml}${reflectionHtml}
     </div>`;
   }).join("");
 
-  const html = `<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
-    <title>Relatório Pedagógico — ${quiz.title}</title>
-    <style>
-      body { font-family: Georgia, serif; max-width: 800px; margin: 0 auto; padding: 40px 32px; color: #1a2e4a; }
-      h1 { font-size: 24px; color: #1a2e4a; margin-bottom: 4px; }
-      .meta { font-size: 12px; color: #666; margin-bottom: 24px; }
-      .meta span { margin-right: 16px; }
-      .excerpt { background: #f5f0e8; border-left: 4px solid #2a9d8f; padding: 12px 16px; margin: 16px 0; font-style: italic; font-size: 14px; border-radius: 4px; }
-      .kpi-row { display: flex; gap: 24px; margin: 24px 0; }
-      .kpi { text-align: center; }
-      .kpi .num { font-size: 32px; font-weight: 900; color: #2a9d8f; }
-      .kpi .lbl { font-size: 11px; color: #888; }
-      @media print { body { padding: 20px; } }
-    </style>
-  </head><body>
+  const totalAllParticipants = sessions.reduce((s: number, sess: any) => s + (sess.participantCount ?? 0), 0);
+
+  const html = `<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatório Pedagógico — ${quiz.title}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', Arial, sans-serif; background: #fff; color: #1a2e4a; font-size: 13px; line-height: 1.6; }
+    .page { max-width: 820px; margin: 0 auto; padding: 48px 40px; }
+
+    /* Capa */
+    .cover { background: linear-gradient(135deg, #1a2e4a 0%, #2a4a6e 100%); color: #fff; padding: 48px 40px; border-radius: 12px; margin-bottom: 40px; }
+    .cover-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #2a9d8f; background: rgba(42,157,143,0.15); border: 1px solid rgba(42,157,143,0.3); border-radius: 20px; display: inline-block; padding: 4px 12px; margin-bottom: 16px; }
+    .cover h1 { font-size: 28px; font-weight: 900; color: #fff; margin-bottom: 8px; line-height: 1.2; }
+    .cover-meta { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 24px; }
+    .cover-meta span { margin-right: 16px; }
+    .cover-kpis { display: flex; gap: 24px; margin-top: 24px; }
+    .cover-kpi { background: rgba(255,255,255,0.08); border-radius: 8px; padding: 16px 20px; text-align: center; flex: 1; }
+    .cover-kpi .num { font-size: 32px; font-weight: 900; color: #2a9d8f; }
+    .cover-kpi .lbl { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+    .excerpt-box { background: rgba(255,255,255,0.12); border-left: 4px solid #2a9d8f; padding: 14px 18px; border-radius: 0 8px 8px 0; margin-top: 20px; font-style: italic; font-size: 13px; color: rgba(255,255,255,0.9); }
+    .excerpt-box strong { font-style: normal; color: #7ee8df; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
+
+    /* Sessão */
+    .session-wrapper { margin-bottom: 48px; }
+    .session-header { background: #f5f0e8; border-radius: 10px; padding: 20px 24px; margin-bottom: 24px; border-left: 5px solid #2a9d8f; }
+
+    /* Secções */
+    .section { margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid #e8e0d0; }
+    .section:last-child { border-bottom: none; }
+    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #1a2e4a; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 2px solid #e8e0d0; }
+
+    /* Tabela de identificação */
+    .ident-table { width: 100%; border-collapse: collapse; }
+    .ident-table tr { border-bottom: 1px solid #f0ebe0; }
+    .ident-table td { padding: 7px 10px; font-size: 12px; }
+    .ident-label { font-weight: 600; color: #888; width: 160px; }
+
+    /* KPIs */
+    .kpi-row { display: flex; gap: 12px; }
+    .kpi-box { flex: 1; background: #f8f5ef; border-radius: 8px; padding: 14px; text-align: center; }
+    .kpi-num { font-size: 28px; font-weight: 900; }
+    .kpi-lbl { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+    /* Perguntas */
+    .question-block { display: flex; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px dashed #e8e0d0; }
+    .question-block:last-child { border-bottom: none; margin-bottom: 0; }
+    .q-num { width: 24px; height: 24px; background: #1a2e4a; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .q-body { flex: 1; }
+    .q-text { font-weight: 600; font-size: 13px; color: #1a2e4a; margin-bottom: 4px; }
+    .q-type-badge { font-size: 10px; color: #2a9d8f; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .q-total { font-size: 11px; color: #aaa; margin-top: 6px; text-align: right; }
+    .open-answer { background: #f5f0e8; border-left: 3px solid #2a9d8f; padding: 6px 10px; border-radius: 0 4px 4px 0; font-style: italic; font-size: 12px; color: #444; margin-bottom: 5px; }
+
+    /* Pontos críticos */
+    .critical-section { background: #fffbeb; border-radius: 8px; padding: 16px 18px; border: 1px solid #fde68a; }
+    .critical-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+    .critical-icon { color: #d97706; font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* Chat */
+    .chat-excerpt { background: #fefce8; border: 1px solid #fde68a; border-radius: 6px; padding: 8px 12px; font-style: italic; font-size: 12px; color: #444; margin-bottom: 6px; }
+
+    /* Pistas de reflexão */
+    .reflection-section { background: #f0faf8; border-radius: 8px; padding: 16px 18px; border: 1px solid #a7f3d0; }
+    .reflection-list { padding-left: 0; list-style: none; }
+    .reflection-list li { padding: 5px 0 5px 20px; position: relative; font-size: 12px; color: #1a4a40; }
+    .reflection-list li::before { content: "→"; position: absolute; left: 0; color: #2a9d8f; font-weight: 700; }
+
+    /* Rodapé */
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e8e0d0; font-size: 10px; color: #aaa; display: flex; justify-content: space-between; }
+
+    @media print {
+      .page { padding: 20px; }
+      .cover { border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Capa -->
+  <div class="cover">
+    <div class="cover-badge">Relatório Pedagógico · Projeto PesqueirAmiga</div>
     <h1>${quiz.title}</h1>
-    <div class="meta">
+    <div class="cover-meta">
       ${quiz.literaryWork ? `<span>📖 ${quiz.literaryWork}</span>` : ""}
-      ${themeLabel ? `<span>🏷️ ${themeLabel}</span>` : ""}
+      ${themeLabel ? `<span>🏷 ${themeLabel}</span>` : ""}
       ${quiz.discipline ? `<span>📚 ${quiz.discipline}</span>` : ""}
       ${quiz.yearGroup ? `<span>🎓 ${quiz.yearGroup}</span>` : ""}
-      ${quiz.className ? `<span>👥 ${quiz.className}</span>` : ""}
-      <span>Exportado em ${dateStr}</span>
     </div>
-    ${quiz.excerpt ? `<div class="excerpt"><strong>Excerto de referência:</strong><br>${quiz.excerpt}</div>` : ""}
-    <div class="kpi-row">
-      <div class="kpi"><div class="num">${sessions.length}</div><div class="lbl">Sessões</div></div>
-      <div class="kpi"><div class="num">${sessions.reduce((s: number, sess: any) => s + sess.participantCount, 0)}</div><div class="lbl">Participantes</div></div>
-      <div class="kpi"><div class="num">${quiz.questions?.length ?? 0}</div><div class="lbl">Questões</div></div>
+    ${quiz.excerpt ? `<div class="excerpt-box"><strong>Excerto de referência</strong>${quiz.excerpt}</div>` : ""}
+    <div class="cover-kpis">
+      <div class="cover-kpi"><div class="num">${sessions.length}</div><div class="lbl">Sessões</div></div>
+      <div class="cover-kpi"><div class="num">${totalAllParticipants}</div><div class="lbl">Participantes</div></div>
+      <div class="cover-kpi"><div class="num">${quiz.questions?.length ?? 0}</div><div class="lbl">Questões</div></div>
     </div>
-    ${sessionsHtml}
-  </body></html>`;
+  </div>
+
+  <!-- Sessões -->
+  ${sessionsHtml}
+
+  <!-- Rodapé -->
+  <div class="footer">
+    <span>Aula Viva · Projeto PesqueirAmiga · Master HBM Research, LDA</span>
+    <span>Exportado em ${dateStr}</span>
+  </div>
+
+</div>
+</body>
+</html>`;
 
   const w = window.open("", "_blank");
   if (w) {
     w.document.write(html);
     w.document.close();
-    setTimeout(() => w.print(), 500);
+    setTimeout(() => w.print(), 800);
     toast.success("Relatório aberto para exportação PDF!");
   }
 }
