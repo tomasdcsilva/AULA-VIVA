@@ -17,7 +17,7 @@ import {
   Quote,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useSearch } from "wouter";
 
 const THEME_LABELS: Record<string, string> = {
   stereotypes: "Estereótipos de Género",
@@ -136,6 +136,9 @@ export default function QuizStats() {
   const { id } = useParams<{ id: string }>();
   const quizId = Number(id);
   const { isAuthenticated } = useAuth();
+  const search = useSearch();
+  const sessionFilter = new URLSearchParams(search).get("session");
+  const filteredSessionId = sessionFilter ? Number(sessionFilter) : null;
 
   const { data, isLoading } = trpc.quizzes.stats.useQuery(
     { id: quizId },
@@ -161,7 +164,13 @@ export default function QuizStats() {
     );
   }
 
-  const { quiz, sessions, totalSessions, totalParticipants } = data;
+  const { quiz, sessions: allSessions, totalSessions: allTotalSessions, totalParticipants: allTotalParticipants } = data;
+  // Filtrar por sessão específica se vier da URL
+  const sessions = filteredSessionId
+    ? allSessions.filter((s: any) => s.sessionId === filteredSessionId)
+    : allSessions;
+  const totalSessions = sessions.length;
+  const totalParticipants = sessions.reduce((sum: number, s: any) => sum + (s.participantCount ?? 0), 0);
   const avgParticipants = totalSessions > 0 ? Math.round(totalParticipants / totalSessions) : 0;
 
   return (

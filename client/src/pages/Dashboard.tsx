@@ -346,7 +346,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <Link
-                  href={`/quiz/${s.quizId}/stats`}
+                  href={`/quiz/${s.quizId}/stats?session=${s.id}`}
                   className="text-xs font-semibold text-teal border border-teal rounded-lg py-1.5 px-3 hover:bg-teal hover:text-white transition-colors w-fit"
                 >
                   Ver Relatório
