@@ -16,6 +16,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { toast } from "sonner";
 
+const SCALE_OPTIONS = [
+  "Concordo totalmente",
+  "Concordo parcialmente",
+  "Discordo parcialmente",
+  "Discordo totalmente",
+];
+
 const OPTION_COLORS = [
   { bg: "bg-[#e21b3c]" },
   { bg: "bg-[#1368ce]" },
@@ -264,18 +271,23 @@ export default function KahootHost() {
             </div>
 
             {/* Opções de resposta */}
-            {activeQuestion.options && (
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {(JSON.parse(activeQuestion.options) as string[]).map((opt, i) => (
-                  <div
-                    key={i}
-                    className={`${OPTION_COLORS[i % OPTION_COLORS.length].bg} rounded-xl p-4 flex items-center gap-3`}
-                  >
-                    <span className="font-semibold text-sm text-white">{opt}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {(activeQuestion.type === "scale" || activeQuestion.options) && activeQuestion.type !== "open" && (() => {
+              const opts = activeQuestion.type === "scale"
+                ? SCALE_OPTIONS
+                : (JSON.parse(activeQuestion.options!) as string[]);
+              return (
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {opts.map((opt, i) => (
+                    <div
+                      key={i}
+                      className={`${OPTION_COLORS[i % OPTION_COLORS.length].bg} rounded-xl p-4 flex items-center gap-3`}
+                    >
+                      <span className="font-semibold text-sm text-white">{opt}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             <button
               onClick={handleCloseQuestion}
@@ -306,9 +318,12 @@ export default function KahootHost() {
             )}
 
             {/* Gráfico de barras — sem destaque de correto/incorreto */}
-            {activeQuestion.options && activeQuestion.type !== "open" && (
+            {(activeQuestion.type === "scale" || activeQuestion.options) && activeQuestion.type !== "open" && (
               <div className="space-y-3 mb-6">
-                {(JSON.parse(activeQuestion.options) as string[]).map((opt, i) => {
+                {(activeQuestion.type === "scale"
+                  ? SCALE_OPTIONS
+                  : (JSON.parse(activeQuestion.options!) as string[])
+                ).map((opt, i) => {
                   const count = qStats.byOption[String(i)] ?? 0;
                   const pct = qStats.total > 0 ? Math.round((count / qStats.total) * 100) : 0;
                   return (
