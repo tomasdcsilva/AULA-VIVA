@@ -55,6 +55,7 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const [yearGroup, setYearGroup] = useState("");
   const [className, setClassName] = useState("");
   const [showResultsImmediately, setShowResultsImmediately] = useState(false);
+  const [hiddenResultsIds, setHiddenResultsIds] = useState<number[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDirty, setIsDirty] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
@@ -104,6 +105,7 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
       setYearGroup(existingQuiz.yearGroup ?? "");
       setClassName(existingQuiz.className ?? "");
       setShowResultsImmediately(existingQuiz.showResultsImmediately);
+      setHiddenResultsIds(JSON.parse((existingQuiz as any).hiddenResultsQuestionIds ?? "[]"));
       setSelectedIds(JSON.parse(existingQuiz.questionIds ?? "[]"));
       setTimeout(() => setDataLoaded(true), 100);
     } else if (!isEdit) {
@@ -139,7 +141,13 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
 
   useEffect(() => {
     if (dataLoaded) setIsDirty(true);
-  }, [title, description, literaryWork, excerpt, theme, discipline, yearGroup, className, showResultsImmediately, selectedIds]);
+  }, [title, description, literaryWork, excerpt, theme, discipline, yearGroup, className, showResultsImmediately, hiddenResultsIds, selectedIds]);
+
+  const toggleHideResults = (qId: number) => {
+    setHiddenResultsIds((prev) =>
+      prev.includes(qId) ? prev.filter((x) => x !== qId) : [...prev, qId]
+    );
+  };
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -152,7 +160,7 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const handleSave = () => {
     if (!title.trim()) { toast.error("O título é obrigatório."); return; }
     if (selectedIds.length === 0) { toast.error("Seleciona pelo menos uma pergunta."); return; }
-    const payload = { title, description, literaryWork, excerpt: excerpt || undefined, theme: theme || undefined, discipline, yearGroup, className, showResultsImmediately, questionIds: selectedIds };
+    const payload = { title, description, literaryWork, excerpt: excerpt || undefined, theme: theme || undefined, discipline, yearGroup, className, showResultsImmediately, hiddenResultsQuestionIds: hiddenResultsIds, questionIds: selectedIds };
     setSavedOnce(true);
     if (isEdit) updateQuiz.mutate({ id: numericId, ...payload });
     else createQuiz.mutate(payload);
@@ -441,6 +449,19 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
                             >
                               <Copy className="w-3 h-3" />
                               Usar como base
+                            </button>
+                          )}
+                          {selected && (
+                            <button
+                              onClick={() => toggleHideResults(q.id)}
+                              title={hiddenResultsIds.includes(q.id) ? "Resultados ocultos à turma" : "Resultados visíveis à turma"}
+                              className={`text-xs font-semibold flex items-center gap-1 transition-colors ${
+                                hiddenResultsIds.includes(q.id)
+                                  ? "text-amber-600 hover:text-amber-800"
+                                  : "text-muted-foreground hover:text-navy"
+                              }`}
+                            >
+                              {hiddenResultsIds.includes(q.id) ? "🔒 Só no relatório" : "👁 Visível à turma"}
                             </button>
                           )}
                           {!(q as any).isSystemSuggestion && (

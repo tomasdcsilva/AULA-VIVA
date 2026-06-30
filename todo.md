@@ -164,3 +164,9 @@
 
 - [x] Backend: coordination.teachers — lista professores com email, escola, nº sessões, nº participantes, última sessão
 - [x] Frontend: tabela de professores ativos no painel de coordenação com email e escola
+
+## Opção hideResults por pergunta (Jun 2026)
+
+- [x] Schema: adicionar campo hiddenResultsQuestionIds ao quiz (JSON array de IDs)
+- [x] Editor de quiz: toggle por pergunta para mostrar/ocultar resultados à turma
+- [x] Ecrã do aluno: ocultar gráfico de resultados quando a pergunta está na lista de ocultas

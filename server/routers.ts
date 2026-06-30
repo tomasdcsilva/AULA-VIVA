@@ -372,14 +372,17 @@ export const appRouter = router({
           yearGroup: z.string().optional(),
           className: z.string().optional(),
           showResultsImmediately: z.boolean().default(false),
+          hiddenResultsQuestionIds: z.array(z.number()).optional(),
           questionIds: z.array(z.number()),
         })
       )
       .mutation(async ({ input, ctx }) => {
         if (ctx.user.role !== "admin" && ctx.user.role !== "user")
           throw new TRPCError({ code: "FORBIDDEN", message: "Apenas professores podem criar quizzes." });
+        const { hiddenResultsQuestionIds, ...rest } = input;
         const id = await createQuiz({
-          ...input,
+          ...rest,
+          hiddenResultsQuestionIds: hiddenResultsQuestionIds ? JSON.stringify(hiddenResultsQuestionIds) : null,
           questionIds: JSON.stringify(input.questionIds),
           createdBy: ctx.user.id,
         });
@@ -399,6 +402,7 @@ export const appRouter = router({
           yearGroup: z.string().optional(),
           className: z.string().optional(),
           showResultsImmediately: z.boolean().optional(),
+          hiddenResultsQuestionIds: z.array(z.number()).optional(),
           questionIds: z.array(z.number()).optional(),
         })
       )
@@ -406,10 +410,11 @@ export const appRouter = router({
         const quiz = await getQuizById(input.id);
         if (!quiz) throw new TRPCError({ code: "NOT_FOUND" });
         if (quiz.createdBy !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
-        const { id, questionIds, ...rest } = input;
+        const { id, questionIds, hiddenResultsQuestionIds, ...rest } = input;
         await updateQuiz(id, {
           ...rest,
           ...(questionIds ? { questionIds: JSON.stringify(questionIds) } : {}),
+          hiddenResultsQuestionIds: hiddenResultsQuestionIds !== undefined ? JSON.stringify(hiddenResultsQuestionIds) : undefined,
         });
         return { success: true };
       }),
@@ -451,6 +456,7 @@ export const appRouter = router({
           yearGroup: quiz.yearGroup ?? undefined,
           className: quiz.className ?? undefined,
           showResultsImmediately: quiz.showResultsImmediately ?? false,
+          hiddenResultsQuestionIds: quiz.hiddenResultsQuestionIds ?? null,
           questionIds: quiz.questionIds,
           createdBy: ctx.user.id,
         });
@@ -607,6 +613,7 @@ export const appRouter = router({
           status: s.status,
           mode: s.mode,
           showResultsImmediately: quiz?.showResultsImmediately ?? false,
+          hiddenResultsQuestionIds: quiz?.hiddenResultsQuestionIds ? JSON.parse(quiz.hiddenResultsQuestionIds) as number[] : [],
           chatEnabled: s.chatEnabled,
           questions: sessionQuestions.map((q) => ({
             id: q.id,

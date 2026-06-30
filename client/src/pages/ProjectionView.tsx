@@ -102,12 +102,17 @@ export default function ProjectionView() {
     ? sessionQuestions.find((q) => q?.id === activeQuestionId)
     : null;
 
-  const chartData = stats?.map((s) => ({
+  const hiddenResultsIds: number[] = quiz?.hiddenResultsQuestionIds
+    ? JSON.parse((quiz as any).hiddenResultsQuestionIds)
+    : [];
+  const activeIsHidden = activeQuestionId ? hiddenResultsIds.includes(activeQuestionId) : false;
+
+  const chartData = (!activeIsHidden && stats?.map((s) => ({
     name: s.answer.length > 30 ? s.answer.slice(0, 30) + "…" : s.answer,
     fullName: s.answer,
     value: s.percentage,
     count: s.count,
-  })) ?? [];
+  }))) || [];
 
   const totalVotes = stats?.reduce((acc, s) => acc + s.count, 0) ?? 0;
 

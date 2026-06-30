@@ -13,6 +13,7 @@ interface SessionData {
   anonToken: string;
   status: string;
   showResultsImmediately: boolean;
+  hiddenResultsQuestionIds: number[];
   chatEnabled: boolean;
   questions: { id: number; text: string; type: string; options: string[] }[];
   quizTitle: string;
@@ -82,7 +83,8 @@ export default function StudentSession() {
     onSuccess: () => {
       if (!activeQ) return;
       setSubmitted((prev) => ({ ...prev, [activeQ.id]: true }));
-      if (sessionData?.showResultsImmediately) setShowStats(true);
+      const isHidden = sessionData?.hiddenResultsQuestionIds?.includes(activeQ.id) ?? false;
+      if (sessionData?.showResultsImmediately && !isHidden) setShowStats(true);
       toast.success("Resposta enviada!");
     },
     onError: (e) => toast.error(e.message),
@@ -273,8 +275,8 @@ export default function StudentSession() {
                   </div>
                 )}
 
-                {/* Estatísticas */}
-                {(showStats || currentStatus === "voting_closed") && stats && stats.length > 0 && (
+                {/* Estatísticas — ocultas se a pergunta estiver na lista hiddenResultsQuestionIds */}
+                {(showStats || currentStatus === "voting_closed") && stats && stats.length > 0 && !(sessionData?.hiddenResultsQuestionIds?.includes(activeQ.id) ?? false) && (
                   <div className="mt-5 animate-fade-in">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1">
                       <BarChart3 className="w-3 h-3" /> Resultados da Turma

@@ -80,6 +80,7 @@ export const quizzes = mysqlTable("quizzes", {
   yearGroup: varchar("yearGroup", { length: 32 }),
   className: varchar("className", { length: 64 }),
   showResultsImmediately: boolean("showResultsImmediately").default(false).notNull(),
+  hiddenResultsQuestionIds: text("hiddenResultsQuestionIds"), // JSON array de IDs de perguntas cujos resultados são ocultos à turma (null = todos visíveis)
   questionIds: text("questionIds").notNull(), // JSON array of question IDs
   createdBy: int("createdBy").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
