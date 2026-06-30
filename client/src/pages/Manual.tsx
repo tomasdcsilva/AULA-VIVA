@@ -52,8 +52,8 @@ function Tip({ text }: { text: string }) {
 
 export default function Manual() {
   return (
-    <div className="min-h-screen bg-cream">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-cream flex flex-col">
+      <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-8">
         {/* Cabeçalho */}
         <div className="mb-8">
           <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-navy mb-6 transition-colors">

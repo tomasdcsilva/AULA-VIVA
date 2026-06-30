@@ -130,7 +130,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Conteúdo principal */}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 flex flex-col">{children}</main>
 
       {/* Footer */}
       <footer className="bg-navy/90 text-white/50 text-xs text-center py-4 mt-auto">

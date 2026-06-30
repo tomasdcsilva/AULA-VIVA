@@ -40,7 +40,7 @@ export default function Profile() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-cream)" }}>
+      <div className="flex-1 flex items-center justify-center" style={{ background: "var(--color-cream)" }}>
         <div className="text-center">
           <p className="text-navy font-semibold mb-4">Precisas de estar autenticado para aceder ao perfil.</p>
           <Link href="/login">
@@ -53,7 +53,7 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-cream)" }}>
+      <div className="flex-1 flex items-center justify-center" style={{ background: "var(--color-cream)" }}>
         <div className="text-center">
           <p className="text-navy font-semibold mb-4">Precisas de estar autenticado para aceder ao perfil.</p>
           <Link href="/login">
@@ -65,8 +65,8 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-cream)" }}>
-      <div className="max-w-lg mx-auto px-4 py-12">
+    <div className="flex-1 flex flex-col" style={{ background: "var(--color-cream)" }}>
+      <div className="flex-1 max-w-lg w-full mx-auto px-4 py-12">
         {/* Voltar */}
         <Link href="/dashboard">
           <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-navy transition-colors mb-8">

@@ -213,7 +213,8 @@ export default function ForgotPassword() {
 
   // Passo 1: Inserir email
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-cream)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--color-cream)" }}>
+      <div className="flex-1 flex items-center justify-center">
       <div className="w-full max-w-md mx-auto px-6 py-12">
         <Logo />
         <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -257,6 +258,11 @@ export default function ForgotPassword() {
             </Button>
           </form>
         </div>
+      </div>
+      </div>
+      {/* Rodapé informativo */}
+      <div className="py-6 text-center text-xs" style={{ color: "#9ca3af" }}>
+        Aula Viva · Projeto PesqueirAmiga
       </div>
     </div>
   );
