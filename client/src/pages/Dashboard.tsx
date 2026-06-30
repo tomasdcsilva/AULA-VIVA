@@ -242,8 +242,14 @@ export default function Dashboard() {
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                     A decorrer
                   </span>
-                  <p className="font-bold text-navy text-lg tracking-widest">{s.code}</p>
-                  <p className="text-xs text-muted-foreground">{s.participantCount} aluno(s) ligado(s)</p>
+                  {s.quizTitle && (
+                    <p className="font-semibold text-navy text-sm mb-0.5">{s.quizTitle}</p>
+                  )}
+                  <p className="font-bold text-navy text-lg tracking-widest font-mono">{s.code}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {s.participantCount} aluno(s) ligado(s)
+                    {s.className && <span className="ml-2 text-teal-700">· {s.className}</span>}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link href={`/kahoot/host/${s.id}`} className="av-btn-primary text-sm px-4 py-2">

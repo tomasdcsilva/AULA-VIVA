@@ -321,7 +321,26 @@ export async function getSessionsByQuiz(quizId: number) {
 export async function getSessionsByTeacher(teacherId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(sessions).where(eq(sessions.teacherId, teacherId)).orderBy(desc(sessions.createdAt));
+  const rows = await db
+    .select({
+      id: sessions.id,
+      code: sessions.code,
+      status: sessions.status,
+      mode: sessions.mode,
+      quizId: sessions.quizId,
+      teacherId: sessions.teacherId,
+      participantCount: sessions.participantCount,
+      school: sessions.school,
+      className: sessions.className,
+      sessionDate: sessions.sessionDate,
+      createdAt: sessions.createdAt,
+      quizTitle: quizzes.title,
+    })
+    .from(sessions)
+    .leftJoin(quizzes, eq(sessions.quizId, quizzes.id))
+    .where(eq(sessions.teacherId, teacherId))
+    .orderBy(desc(sessions.createdAt));
+  return rows;
 }
 
 export async function updateSession(id: number, data: Partial<InsertSession>) {
