@@ -1,5 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { BookOpen, BarChart3, Home, LogOut, Menu, X } from "lucide-react";
+import { BookOpen, Home, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -12,9 +12,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? [
         { href: "/dashboard", label: "Painel", icon: Home },
         { href: "/questions", label: "Banco de Perguntas", icon: BookOpen },
-        ...(user?.role === "admin"
-          ? [{ href: "/coordination", label: "Coordenação", icon: BarChart3 }]
-          : []),
       ]
     : [];
 
