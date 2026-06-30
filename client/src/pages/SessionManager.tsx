@@ -174,20 +174,36 @@ export default function SessionManager() {
             </button>
           )}
           {status === "active" && (
-            <button
-              onClick={() => updateStatus.mutate({ id: sessionId, status: "voting_closed" })}
-              className="bg-amber-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-amber-600 transition-colors flex items-center gap-2"
-            >
-              <Square className="w-4 h-4" /> Encerrar Votação
-            </button>
+            <>
+              <button
+                onClick={() => updateStatus.mutate({ id: sessionId, status: "voting_closed" })}
+                className="bg-amber-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-amber-600 transition-colors flex items-center gap-2"
+              >
+                <Square className="w-4 h-4" /> Encerrar Votação
+              </button>
+              <button
+                onClick={() => { if (confirm("Tens a certeza que queres encerrar a sessão agora?")) updateStatus.mutate({ id: sessionId, status: "closed" }); }}
+                className="bg-red-100 text-red-700 font-semibold px-5 py-3 rounded-xl hover:bg-red-200 transition-colors flex items-center gap-2"
+              >
+                <Square className="w-4 h-4" /> Encerrar Sessão
+              </button>
+            </>
           )}
           {status === "voting_closed" && (
-            <button
-              onClick={() => updateStatus.mutate({ id: sessionId, status: "chat_open", chatEnabled: true })}
-              className="av-btn-primary flex items-center gap-2"
-            >
-              <MessageCircle className="w-4 h-4" /> Abrir Chat para Debate
-            </button>
+            <>
+              <button
+                onClick={() => updateStatus.mutate({ id: sessionId, status: "chat_open", chatEnabled: true })}
+                className="av-btn-primary flex items-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4" /> Abrir Chat para Debate
+              </button>
+              <button
+                onClick={() => { if (confirm("Tens a certeza que queres encerrar a sessão agora?")) updateStatus.mutate({ id: sessionId, status: "closed" }); }}
+                className="bg-red-100 text-red-700 font-semibold px-5 py-3 rounded-xl hover:bg-red-200 transition-colors flex items-center gap-2"
+              >
+                <Square className="w-4 h-4" /> Encerrar Sessão
+              </button>
+            </>
           )}
           {status === "chat_open" && (
             <>
@@ -381,6 +397,29 @@ export default function SessionManager() {
               </ul>
             </div>
 
+            <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={async () => {
+                try {
+                  toast.loading("A gerar PDF...", { id: "pdf" });
+                  const res = await fetch(`/api/report/${sessionId}/pdf`);
+                  if (!res.ok) throw new Error("Erro ao gerar PDF");
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `relatorio_${report.sessionCode}_${new Date().toISOString().slice(0, 10)}.pdf`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success("PDF descarregado!", { id: "pdf" });
+                } catch (e) {
+                  toast.error("Erro ao gerar PDF", { id: "pdf" });
+                }
+              }}
+              className="av-btn-primary flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" /> Exportar PDF
+            </button>
             <button
               onClick={() => {
                 const date = new Date().toLocaleDateString("pt-PT");
@@ -425,10 +464,11 @@ export default function SessionManager() {
                 if (win) { win.onload = () => { win.print(); }; }
                 toast.success("Relatório aberto para impressão/PDF!");
               }}
-              className="av-btn-primary flex items-center gap-2"
+              className="bg-cream-dark text-navy font-semibold px-5 py-3 rounded-xl hover:bg-cream transition-colors flex items-center gap-2"
             >
-              <FileText className="w-4 h-4" /> Exportar como PDF
+              <FileText className="w-4 h-4" /> Exportar HTML
             </button>
+            </div>
           </div>
         )}
       </div>

@@ -170,3 +170,12 @@
 - [x] Schema: adicionar campo hiddenResultsQuestionIds ao quiz (JSON array de IDs)
 - [x] Editor de quiz: toggle por pergunta para mostrar/ocultar resultados à turma
 - [x] Ecrã do aluno: ocultar gráfico de resultados quando a pergunta está na lista de ocultas
+
+## Funcionalidades em falta dos documentos (Jun 2026)
+
+- [x] Schema: adicionar campo school à tabela users
+- [x] Página de registo: adicionar campo escola
+- [x] Backend: guardar escola no registo
+- [x] SessionManager: botão "Encerrar Sessão" disponível em todos os estados ativos
+- [x] Relatório PDF: calcular duração da sessão (closedAt - createdAt)
+- [x] Exportação do relatório em PDF real via Puppeteer (rota /api/report/:id/pdf)

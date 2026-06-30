@@ -90,7 +90,7 @@ export async function getUserById(id: number) {
 }
 
 // ─── Autenticação Própria ─────────────────────────────────────────────────────
-export async function registerUser(data: { name: string; email: string; password: string }) {
+export async function registerUser(data: { name: string; email: string; password: string; school?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
 
@@ -112,6 +112,7 @@ export async function registerUser(data: { name: string; email: string; password
     verificationToken,
     verificationTokenExpiresAt,
     lastSignedIn: new Date(),
+    school: data.school ?? null,
   });
 
   const created = await getUserByEmail(data.email);

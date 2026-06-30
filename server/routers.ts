@@ -95,7 +95,7 @@ export const appRouter = router({
     }),
 
     register: publicProcedure
-      .input(z.object({ name: z.string().min(2), email: z.string().email(), password: z.string().min(8) }))
+      .input(z.object({ name: z.string().min(2), email: z.string().email(), password: z.string().min(8), school: z.string().optional() }))
       .mutation(async ({ input }) => {
         try {
           const { user, verificationToken } = await registerUser(input);

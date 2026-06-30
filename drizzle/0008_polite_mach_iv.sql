@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `school` varchar(256);

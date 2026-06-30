@@ -10,6 +10,7 @@ export default function Register() {
   const [, navigate] = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [school, setSchool] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -26,7 +27,7 @@ export default function Register() {
     setError("");
     if (password !== confirm) { setError("As passwords não coincidem."); return; }
     if (password.length < 8) { setError("A password deve ter pelo menos 8 caracteres."); return; }
-    register.mutate({ name, email, password });
+    register.mutate({ name, email, password, school: school.trim() || undefined });
   };
 
   if (false) {
@@ -84,6 +85,18 @@ export default function Register() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="school" style={{ color: "var(--color-navy)" }}>Escola</Label>
+              <Input
+                id="school"
+                type="text"
+                placeholder="Ex: Escola Secundária de Pesqueira"
+                value={school}
+                onChange={e => setSchool(e.target.value)}
                 className="mt-1"
               />
             </div>

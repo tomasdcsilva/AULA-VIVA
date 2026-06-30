@@ -16,6 +16,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  school: varchar("school", { length: 256 }), // escola onde leciona
   // Autenticação própria (email + password)
   passwordHash: varchar("passwordHash", { length: 256 }),
   emailVerified: boolean("emailVerified").default(false).notNull(),

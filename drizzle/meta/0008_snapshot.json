@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "297a75d8-04cf-4f1b-bf72-a28922f0475f",
-  "prevId": "491fd16a-d85d-4b13-8d85-d8617658c771",
+  "id": "47255b71-2763-47b5-8b31-14c5354ac745",
+  "prevId": "297a75d8-04cf-4f1b-bf72-a28922f0475f",
   "tables": {
     "chat_messages": {
       "name": "chat_messages",
@@ -620,6 +620,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'user'"
+        },
+        "school": {
+          "name": "school",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "passwordHash": {
           "name": "passwordHash",
