@@ -150,6 +150,17 @@ export default function Dashboard() {
   const { data: sessions } = trpc.sessions.list.useQuery(undefined, { enabled: isAuthenticated });
   const [launchQuiz, setLaunchQuiz] = useState<{ id: number; title: string; className?: string | null; discipline?: string | null } | null>(null);
 
+  const deleteSession = trpc.sessions.delete.useMutation({
+    onSuccess: () => { toast.success("Sessão eliminada."); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleDeleteSession = (id: number) => {
+    if (confirm("Eliminar esta sessão? Todos os dados (respostas e chat) serão apagados.")) {
+      deleteSession.mutate({ id });
+    }
+  };
+
   const deleteQuiz = trpc.quizzes.delete.useMutation({
     onSuccess: () => { refetchQuizzes(); toast.success("Quiz eliminado."); },
     onError: (e) => toast.error(e.message),
@@ -211,7 +222,7 @@ export default function Dashboard() {
       </div>
 
       {/* Explicação pedagógica */}
-      <PedagogicBox title="Como funciona o Painel do Professor">
+      <PedagogicBox title="Como funciona o Painel do Professor" dismissKey="dashboard_howto">
         Aqui podes criar quizzes e lançá-los em aula. Clica em <strong>Jogar</strong> para lançar o quiz em modo
         interativo: aparece um código que os alunos introduzem no telemóvel para responder anonimamente.
         Depois da sessão, clica em <strong>Gerir</strong> para ver as estatísticas e as respostas da turma.
@@ -234,9 +245,19 @@ export default function Dashboard() {
                   <p className="font-bold text-navy text-lg tracking-widest">{s.code}</p>
                   <p className="text-xs text-muted-foreground">{s.participantCount} aluno(s) ligado(s)</p>
                 </div>
-                <Link href={`/kahoot/host/${s.id}`} className="av-btn-primary text-sm px-4 py-2">
-                  Continuar
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link href={`/kahoot/host/${s.id}`} className="av-btn-primary text-sm px-4 py-2">
+                    Continuar
+                  </Link>
+                  <button
+                    onClick={() => handleDeleteSession(s.id)}
+                    disabled={deleteSession.isPending}
+                    className="p-2 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                    title="Eliminar sessão"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
