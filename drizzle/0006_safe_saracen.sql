@@ -1,0 +1,1 @@
+ALTER TABLE `questions` ADD `isSystemSuggestion` boolean DEFAULT false NOT NULL;

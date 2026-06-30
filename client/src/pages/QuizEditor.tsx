@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import PedagogicBox from "@/components/PedagogicBox";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, Plus, Trash2, ArrowLeft, Save } from "lucide-react";
+import { BookOpen, Plus, Trash2, ArrowLeft, Save, Sparkles, User, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import { toast } from "sonner";
@@ -12,12 +12,26 @@ const CATEGORIES: Record<string, string> = {
   consent: "Consentimento",
   psychological_violence: "Violência Psicológica",
   healthy_relationships: "Relações Saudáveis",
+  jealousy: "Ciúme e Possessividade",
+  peer_pressure: "Pressão do Grupo",
+  social_media: "Redes Sociais e Identidade",
+  masculinities: "Masculinidades",
+  emotional_dependency: "Dependência Emocional",
 };
 
 const SENSITIVITY: Record<string, string> = {
   low: "🟢 Baixa",
   medium: "🟡 Média",
   high: "🔴 Alta",
+};
+
+const EMPTY_NEW_Q = {
+  text: "",
+  type: "multiple_choice" as "multiple_choice" | "scale" | "open",
+  category: "stereotypes" as string,
+  sensitivityLevel: "low" as "low" | "medium" | "high",
+  educationLevel: "all" as "2nd_cycle" | "3rd_cycle" | "secondary" | "all",
+  options: ["", "", "", ""],
 };
 
 interface QuizEditorProps {
@@ -31,6 +45,7 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
 
+  // Metadados do quiz
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [literaryWork, setLiteraryWork] = useState("");
@@ -41,12 +56,19 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const [className, setClassName] = useState("");
   const [showResultsImmediately, setShowResultsImmediately] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [sensitivityFilter, setSensitivityFilter] = useState("");
-  const [educationLevelFilter, setEducationLevelFilter] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Filtros do banco
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [educationLevelFilter, setEducationLevelFilter] = useState("");
+  const [sensitivityFilter, setSensitivityFilter] = useState("");
+  const [bankTab, setBankTab] = useState<"suggestions" | "mine">("suggestions");
+
+  // Formulário de nova pergunta
+  const [showNewQForm, setShowNewQForm] = useState(false);
+  const [newQ, setNewQ] = useState({ ...EMPTY_NEW_Q });
 
   const numericId = isEdit ? Number(id) : 0;
   const validId = isEdit && !isNaN(numericId) && numericId > 0;
@@ -56,10 +78,19 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
     { enabled: validId && isAuthenticated }
   );
 
-  const { data: questions } = trpc.questions.list.useQuery(
-    { category: categoryFilter || undefined, sensitivityLevel: sensitivityFilter || undefined, educationLevel: educationLevelFilter || undefined },
+  // Sugestões do sistema
+  const { data: suggestions } = trpc.questions.suggestions.useQuery(
+    { category: categoryFilter || undefined, educationLevel: educationLevelFilter || undefined, sensitivityLevel: sensitivityFilter || undefined },
     { enabled: isAuthenticated }
   );
+
+  // Perguntas do professor
+  const { data: myQuestions, refetch: refetchMine } = trpc.questions.myQuestions.useQuery(
+    { category: categoryFilter || undefined, educationLevel: educationLevelFilter || undefined },
+    { enabled: isAuthenticated }
+  );
+
+  const utils = trpc.useUtils();
 
   useEffect(() => {
     if (existingQuiz) {
@@ -90,18 +121,29 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
     onError: (e) => toast.error(e.message),
   });
 
-  // Marcar como alterado apenas após os dados terem sido carregados (evita falso dirty ao carregar)
+  const createQuestion = trpc.questions.create.useMutation({
+    onSuccess: () => {
+      toast.success("Pergunta criada e adicionada!");
+      setShowNewQForm(false);
+      setNewQ({ ...EMPTY_NEW_Q });
+      refetchMine();
+      setBankTab("mine");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const deleteQuestion = trpc.questions.delete.useMutation({
+    onSuccess: () => { toast.success("Pergunta eliminada."); refetchMine(); },
+    onError: (e) => toast.error(e.message),
+  });
+
   useEffect(() => {
     if (dataLoaded) setIsDirty(true);
   }, [title, description, literaryWork, excerpt, theme, discipline, yearGroup, className, showResultsImmediately, selectedIds]);
 
-  // Aviso ao tentar sair com alterações não guardadas
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty && !savedOnce) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
+      if (isDirty && !savedOnce) { e.preventDefault(); e.returnValue = ""; }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -117,9 +159,38 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   };
 
   const toggleQuestion = (qId: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(qId) ? prev.filter((x) => x !== qId) : [...prev, qId]
-    );
+    setSelectedIds((prev) => prev.includes(qId) ? prev.filter((x) => x !== qId) : [...prev, qId]);
+  };
+
+  // "Usar como base": copia a sugestão como nova pergunta do professor
+  const useSuggestionAsBase = (q: any) => {
+    setNewQ({
+      text: q.text,
+      type: q.type,
+      category: q.category,
+      sensitivityLevel: q.sensitivityLevel,
+      educationLevel: q.educationLevel,
+      options: q.options ? JSON.parse(q.options) : ["", "", "", ""],
+    });
+    setShowNewQForm(true);
+    setBankTab("mine");
+    setTimeout(() => document.getElementById("new-q-form")?.scrollIntoView({ behavior: "smooth" }), 100);
+  };
+
+  const handleCreateQuestion = () => {
+    if (!newQ.text.trim()) { toast.error("O texto da pergunta é obrigatório."); return; }
+    const opts = newQ.type !== "open" ? newQ.options.filter(o => o.trim()) : undefined;
+    if (newQ.type === "multiple_choice" && (!opts || opts.length < 2)) {
+      toast.error("Adiciona pelo menos 2 opções de resposta."); return;
+    }
+    createQuestion.mutate({
+      text: newQ.text,
+      type: newQ.type,
+      category: newQ.category as any,
+      sensitivityLevel: newQ.sensitivityLevel,
+      educationLevel: newQ.educationLevel,
+      options: opts,
+    });
   };
 
   if (!isAuthenticated) {
@@ -134,6 +205,8 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
       </div>
     );
   }
+
+  const displayedQuestions = bankTab === "suggestions" ? (suggestions ?? []) : (myQuestions ?? []);
 
   return (
     <div className="av-section animate-fade-in">
@@ -151,14 +224,12 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
         </button>
         <div>
           <h1 className="av-section-title">{isEdit ? "Editar Quiz" : "Novo Quiz"}</h1>
-          <p className="av-section-subtitle">Configura o quiz e seleciona as perguntas do banco validado.</p>
+          <p className="av-section-subtitle">Configura o quiz e seleciona ou cria as perguntas.</p>
         </div>
       </div>
 
-      <PedagogicBox title="Sobre a criação de quizzes">
-        Cada quiz é associado a uma obra literária e a uma turma específica. As perguntas são retiradas do banco
-        validado por especialistas em igualdade de género. Podes filtrar por tema e nível de sensibilidade para
-        adaptar o quiz ao contexto da tua turma.
+      <PedagogicBox title="Como funciona o banco de perguntas">
+        O banco tem <strong>sugestões do sistema</strong> — perguntas validadas sobre igualdade de género — que podes usar diretamente ou adaptar como ponto de partida. Podes também criar as tuas próprias perguntas, que ficam guardadas para uso futuro.
       </PedagogicBox>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
@@ -168,121 +239,57 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
 
           <div>
             <label className="block text-sm font-semibold text-navy mb-1">Título *</label>
-            <input
-              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card"
-              placeholder="Ex: Relações tóxicas em 'Ana Karenina'"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+            <input className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card" placeholder="Ex: Relações tóxicas em 'Ana Karenina'" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-navy mb-1">Obra Literária</label>
-            <input
-              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card"
-              placeholder="Ex: A Culpa é das Estrelas"
-              value={literaryWork}
-              onChange={(e) => setLiteraryWork(e.target.value)}
-            />
+            <input className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card" placeholder="Ex: A Culpa é das Estrelas" value={literaryWork} onChange={(e) => setLiteraryWork(e.target.value)} />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-navy mb-1">Tema Central</label>
-            <select
-              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card"
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-            >
+            <select className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card" value={theme} onChange={(e) => setTheme(e.target.value)}>
               <option value="">Selecionar tema (opcional)</option>
-              <option value="stereotypes">Estereótipos de Género</option>
-              <option value="control">Controlo e Ciúme</option>
-              <option value="consent">Consentimento</option>
-              <option value="psychological_violence">Violência Psicológica</option>
-              <option value="healthy_relationships">Relações Saudáveis</option>
-              <option value="jealousy">Ciúme e Possessividade</option>
-              <option value="peer_pressure">Pressão do Grupo</option>
-              <option value="social_media">Redes Sociais e Identidade</option>
-              <option value="masculinities">Masculinidades</option>
-              <option value="emotional_dependency">Dependência Emocional</option>
+              {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-navy mb-1">Excerto Literário <span className="text-muted-foreground font-normal">(opcional)</span></label>
-            <textarea
-              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card resize-none"
-              rows={4}
-              placeholder="Cola aqui o excerto do texto que vai ser apresentado à turma antes das perguntas..."
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-            />
+            <textarea className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card resize-none" rows={4} placeholder="Cola aqui o excerto do texto que vai ser apresentado à turma antes das perguntas..." value={excerpt} onChange={(e) => setExcerpt(e.target.value)} />
             <p className="text-xs text-muted-foreground mt-1">Este excerto será mostrado no relatório pedagógico como ponto de partida da atividade.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-navy mb-1">Disciplina</label>
-              <input
-                className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card"
-                placeholder="Ex: Português"
-                value={discipline}
-                onChange={(e) => setDiscipline(e.target.value)}
-              />
+              <input className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card" placeholder="Ex: Português" value={discipline} onChange={(e) => setDiscipline(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm font-semibold text-navy mb-1">Ano Letivo</label>
-              <input
-                className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card"
-                placeholder="Ex: 9.º ano"
-                value={yearGroup}
-                onChange={(e) => setYearGroup(e.target.value)}
-              />
+              <input className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card" placeholder="Ex: 9.º ano" value={yearGroup} onChange={(e) => setYearGroup(e.target.value)} />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-navy mb-1">Turma</label>
-            <input
-              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card"
-              placeholder="Ex: 9.º A"
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-            />
+            <input className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card" placeholder="Ex: 9.º A" value={className} onChange={(e) => setClassName(e.target.value)} />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-navy mb-1">Descrição</label>
-            <textarea
-              className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card resize-none"
-              rows={3}
-              placeholder="Contexto pedagógico desta atividade..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <textarea className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card resize-none" rows={3} placeholder="Contexto pedagógico desta atividade..." value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
           <div className="flex items-center gap-3 p-4 bg-cream-dark rounded-xl">
-            <input
-              type="checkbox"
-              id="showResults"
-              checked={showResultsImmediately}
-              onChange={(e) => setShowResultsImmediately(e.target.checked)}
-              className="w-4 h-4 accent-teal"
-            />
-            <label htmlFor="showResults" className="text-sm font-semibold text-navy cursor-pointer">
-              Mostrar resultados em tempo real aos alunos
-            </label>
+            <input type="checkbox" id="showResults" checked={showResultsImmediately} onChange={(e) => setShowResultsImmediately(e.target.checked)} className="w-4 h-4 accent-teal" />
+            <label htmlFor="showResults" className="text-sm font-semibold text-navy cursor-pointer">Mostrar resultados em tempo real aos alunos</label>
           </div>
 
           <div className="pt-2">
-            <p className="text-sm text-muted-foreground mb-2">
-              {selectedIds.length} pergunta(s) selecionada(s)
-            </p>
-            <button
-              onClick={handleSave}
-              disabled={createQuiz.isPending || updateQuiz.isPending}
-              className="av-btn-primary w-full flex items-center justify-center gap-2"
-            >
+            <p className="text-sm text-muted-foreground mb-2">{selectedIds.length} pergunta(s) selecionada(s)</p>
+            <button onClick={handleSave} disabled={createQuiz.isPending || updateQuiz.isPending} className="av-btn-primary w-full flex items-center justify-center gap-2">
               <Save className="w-4 h-4" />
               {isEdit ? "Guardar Alterações" : "Criar Quiz"}
             </button>
@@ -291,79 +298,160 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
 
         {/* Coluna direita: banco de perguntas */}
         <div>
-          <h2 className="text-lg font-display font-bold text-navy mb-3">Banco de Perguntas</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-display font-bold text-navy">Perguntas</h2>
+            <button
+              onClick={() => { setShowNewQForm(!showNewQForm); setNewQ({ ...EMPTY_NEW_Q }); }}
+              className="flex items-center gap-1.5 text-sm font-semibold text-teal hover:text-teal-dark transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nova pergunta
+            </button>
+          </div>
+
+          {/* Formulário de nova pergunta */}
+          {showNewQForm && (
+            <div id="new-q-form" className="mb-4 p-4 bg-cream-dark rounded-xl border border-teal/30 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <User className="w-4 h-4 text-teal" />
+                <span className="text-sm font-bold text-navy">Criar pergunta própria</span>
+              </div>
+              <textarea
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal resize-none"
+                rows={3}
+                placeholder="Texto da pergunta..."
+                value={newQ.text}
+                onChange={(e) => setNewQ(q => ({ ...q, text: e.target.value }))}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <select className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" value={newQ.type} onChange={(e) => setNewQ(q => ({ ...q, type: e.target.value as any }))}>
+                  <option value="multiple_choice">Múltipla escolha</option>
+                  <option value="scale">Escala concordo/discordo</option>
+                  <option value="open">Resposta aberta</option>
+                </select>
+                <select className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" value={newQ.category} onChange={(e) => setNewQ(q => ({ ...q, category: e.target.value }))}>
+                  {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+                <select className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" value={newQ.sensitivityLevel} onChange={(e) => setNewQ(q => ({ ...q, sensitivityLevel: e.target.value as any }))}>
+                  <option value="low">🟢 Sensibilidade baixa</option>
+                  <option value="medium">🟡 Sensibilidade média</option>
+                  <option value="high">🔴 Sensibilidade alta</option>
+                </select>
+                <select className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" value={newQ.educationLevel} onChange={(e) => setNewQ(q => ({ ...q, educationLevel: e.target.value as any }))}>
+                  <option value="all">Todos os níveis</option>
+                  <option value="2nd_cycle">2.º Ciclo</option>
+                  <option value="3rd_cycle">3.º Ciclo</option>
+                  <option value="secondary">Secundário</option>
+                </select>
+              </div>
+              {newQ.type === "multiple_choice" && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-navy">Opções de resposta</p>
+                  {newQ.options.map((opt, i) => (
+                    <input key={i} className="w-full border border-border rounded-lg px-3 py-1.5 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" placeholder={`Opção ${i + 1}`} value={opt} onChange={(e) => { const o = [...newQ.options]; o[i] = e.target.value; setNewQ(q => ({ ...q, options: o })); }} />
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button onClick={handleCreateQuestion} disabled={createQuestion.isPending} className="av-btn-primary text-sm py-2 px-4 flex items-center gap-1.5">
+                  <Save className="w-3.5 h-3.5" />
+                  {createQuestion.isPending ? "A guardar..." : "Guardar pergunta"}
+                </button>
+                <button onClick={() => setShowNewQForm(false)} className="text-sm text-muted-foreground hover:text-navy transition-colors px-3">Cancelar</button>
+              </div>
+            </div>
+          )}
+
+          {/* Tabs: sugestões / minhas perguntas */}
+          <div className="flex gap-1 mb-3 bg-cream-dark rounded-xl p-1">
+            <button
+              onClick={() => setBankTab("suggestions")}
+              className={`flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold py-2 rounded-lg transition-all ${bankTab === "suggestions" ? "bg-white text-teal shadow-sm" : "text-muted-foreground hover:text-navy"}`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Sugestões ({suggestions?.length ?? 0})
+            </button>
+            <button
+              onClick={() => setBankTab("mine")}
+              className={`flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold py-2 rounded-lg transition-all ${bankTab === "mine" ? "bg-white text-teal shadow-sm" : "text-muted-foreground hover:text-navy"}`}
+            >
+              <User className="w-3.5 h-3.5" />
+              As minhas ({myQuestions?.length ?? 0})
+            </button>
+          </div>
 
           {/* Filtros */}
-          <div className="flex gap-2 mb-4 flex-wrap">
-            <select
-              className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-            >
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <select className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
               <option value="">Todos os temas</option>
-              {Object.entries(CATEGORIES).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
+              {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <select
-              className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal"
-              value={educationLevelFilter}
-              onChange={(e) => setEducationLevelFilter(e.target.value)}
-            >
+            <select className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" value={educationLevelFilter} onChange={(e) => setEducationLevelFilter(e.target.value)}>
               <option value="">Todos os níveis</option>
-              <option value="2nd_cycle">2.º Ciclo (5.º-6.º ano)</option>
-              <option value="3rd_cycle">3.º Ciclo (7.º-9.º ano)</option>
-              <option value="secondary">Ensino Secundário (10.º-12.º ano)</option>
+              <option value="2nd_cycle">2.º Ciclo</option>
+              <option value="3rd_cycle">3.º Ciclo</option>
+              <option value="secondary">Secundário</option>
             </select>
-            <select
-              className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal"
-              value={sensitivityFilter}
-              onChange={(e) => setSensitivityFilter(e.target.value)}
-            >
-              <option value="">Toda a sensibilidade</option>
-              {Object.entries(SENSITIVITY).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
-            </select>
+            {bankTab === "suggestions" && (
+              <select className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" value={sensitivityFilter} onChange={(e) => setSensitivityFilter(e.target.value)}>
+                <option value="">Toda a sensibilidade</option>
+                <option value="low">🟢 Baixa</option>
+                <option value="medium">🟡 Média</option>
+                <option value="high">🔴 Alta</option>
+              </select>
+            )}
           </div>
 
           <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-            {!questions || questions.length === 0 ? (
+            {displayedQuestions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm">
-                Nenhuma pergunta encontrada. Adiciona perguntas no{" "}
-                <Link href="/questions" className="text-teal underline">Banco de Perguntas</Link>.
+                {bankTab === "mine"
+                  ? <span>Ainda não tens perguntas criadas. Clica em <strong>Nova pergunta</strong> para começar, ou usa <strong>Usar como base</strong> numa sugestão.</span>
+                  : "Nenhuma sugestão encontrada com estes filtros."}
               </div>
             ) : (
-              questions.map((q) => {
+              displayedQuestions.map((q) => {
                 const selected = selectedIds.includes(q.id);
                 return (
-                  <div
-                    key={q.id}
-                    onClick={() => toggleQuestion(q.id)}
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                      selected
-                        ? "border-teal bg-teal-light"
-                        : "border-border bg-card hover:border-teal/40"
-                    }`}
-                  >
+                  <div key={q.id} className={`p-4 rounded-xl border-2 transition-all ${selected ? "border-teal bg-teal-light" : "border-border bg-card"}`}>
                     <div className="flex items-start gap-3">
-                      <div className={`w-5 h-5 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-                        selected ? "bg-teal border-teal" : "border-gray-300"
-                      }`}>
+                      <button
+                        onClick={() => toggleQuestion(q.id)}
+                        className={`w-5 h-5 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${selected ? "bg-teal border-teal" : "border-gray-300 hover:border-teal/60"}`}
+                      >
                         {selected && <span className="text-white text-xs font-bold">✓</span>}
-                      </div>
+                      </button>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-navy leading-relaxed">{q.text}</p>
                         <div className="flex flex-wrap gap-1 mt-2">
-                          <span className="av-badge bg-teal-light text-teal-dark text-xs">
-                            {CATEGORIES[q.category]}
-                          </span>
-                          <span className="av-badge bg-cream-dark text-navy text-xs">
-                            {SENSITIVITY[q.sensitivityLevel]}
-                          </span>
+                          <span className="av-badge bg-teal-light text-teal-dark text-xs">{CATEGORIES[q.category]}</span>
+                          <span className="av-badge bg-cream-dark text-navy text-xs">{SENSITIVITY[q.sensitivityLevel]}</span>
                           <span className="av-badge bg-cream-dark text-muted-foreground text-xs">
                             {q.type === "multiple_choice" ? "Múltipla escolha" : q.type === "scale" ? "Escala" : "Resposta aberta"}
                           </span>
+                          {(q as any).isSystemSuggestion && (
+                            <span className="av-badge bg-amber-100 text-amber-700 text-xs flex items-center gap-0.5"><Sparkles className="w-2.5 h-2.5" />Sugestão</span>
+                          )}
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          {(q as any).isSystemSuggestion && (
+                            <button
+                              onClick={() => useSuggestionAsBase(q)}
+                              className="text-xs text-teal hover:text-teal-dark font-semibold flex items-center gap-1 transition-colors"
+                            >
+                              <Copy className="w-3 h-3" />
+                              Usar como base
+                            </button>
+                          )}
+                          {!(q as any).isSystemSuggestion && (
+                            <button
+                              onClick={() => { if (window.confirm("Eliminar esta pergunta?")) deleteQuestion.mutate({ id: q.id }); }}
+                              className="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1 transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Eliminar
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

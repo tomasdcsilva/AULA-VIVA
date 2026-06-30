@@ -138,13 +138,28 @@ export default function QuestionBank() {
   const [discipline, setDiscipline] = useState("");
   const [literaryWork, setLiteraryWork] = useState("");
 
-  const { data: questions, refetch } = trpc.questions.list.useQuery(
-    {
-      category: categoryFilter || undefined,
-      educationLevel: educationFilter || undefined,
-    },
+  const [bankTab, setBankTab] = useState<"suggestions" | "mine">("suggestions");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editOptions, setEditOptions] = useState<string[]>([]);
+  const [editCategory, setEditCategory] = useState("");
+  const [editSensitivity, setEditSensitivity] = useState<"low"|"medium"|"high">("low");
+  const [editEducationLevel, setEditEducationLevel] = useState("all");
+  const [editDiscipline, setEditDiscipline] = useState("");
+  const [editLiteraryWork, setEditLiteraryWork] = useState("");
+
+  const { data: suggestions, refetch: refetchSuggestions } = trpc.questions.suggestions.useQuery(
+    { category: categoryFilter || undefined, educationLevel: educationFilter || undefined },
     { enabled: isAuthenticated }
   );
+
+  const { data: myQuestions, refetch: refetchMine } = trpc.questions.myQuestions.useQuery(
+    { category: categoryFilter || undefined, educationLevel: educationFilter || undefined },
+    { enabled: isAuthenticated }
+  );
+
+  const refetch = () => { refetchSuggestions(); refetchMine(); };
+  const questions = bankTab === "suggestions" ? (suggestions ?? []) : (myQuestions ?? []);
 
   const { data: pendingQuestions, refetch: refetchPending } = trpc.questions.pending.useQuery(
     undefined,
@@ -152,17 +167,49 @@ export default function QuestionBank() {
   );
 
   const createQuestion = trpc.questions.create.useMutation({
-    onSuccess: (data) => {
-      if ((data as any).pending) {
-        toast.success("Pergunta submetida para aprovação! O coordenador irá revê-la em breve.");
-      } else {
-        toast.success("Pergunta adicionada ao banco!");
-      }
+    onSuccess: () => {
+      toast.success("Pergunta criada e guardada nas tuas perguntas!");
       refetch();
       closeAllForms();
+      setBankTab("mine");
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const deleteQuestion = trpc.questions.delete.useMutation({
+    onSuccess: () => { toast.success("Pergunta eliminada."); refetchMine(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updateOwnQuestion = trpc.questions.updateOwn.useMutation({
+    onSuccess: () => { toast.success("Pergunta atualizada!"); setEditingId(null); refetchMine(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const startEdit = (q: any) => {
+    setEditingId(q.id);
+    setEditText(q.text);
+    setEditOptions(q.options ? JSON.parse(q.options) : []);
+    setEditCategory(q.category ?? "healthy_relationships");
+    setEditSensitivity(q.sensitivityLevel ?? "low");
+    setEditEducationLevel(q.educationLevel ?? "all");
+    setEditDiscipline(q.discipline ?? "");
+    setEditLiteraryWork(q.literaryWork ?? "");
+  };
+
+  const saveEdit = (q: any) => {
+    if (!editText.trim()) { toast.error("O texto é obrigatório."); return; }
+    updateOwnQuestion.mutate({
+      id: q.id,
+      text: editText,
+      options: editOptions.filter(o => o.trim()).length > 0 ? editOptions.filter(o => o.trim()) : undefined,
+      category: editCategory || undefined,
+      sensitivityLevel: editSensitivity,
+      educationLevel: editEducationLevel as any,
+      discipline: editDiscipline || undefined,
+      literaryWork: editLiteraryWork || undefined,
+    });
+  };
 
   const approveQuestion = trpc.questions.approve.useMutation({
     onSuccess: () => { toast.success("Pergunta aprovada!"); refetch(); refetchPending(); },
@@ -243,7 +290,7 @@ export default function QuestionBank() {
       </div>
 
       <PedagogicBox title="Como usar o Banco de Perguntas">
-        Escolhe um dos cinco tipos de pergunta abaixo — cada um foi desenhado para desenvolver uma competência específica nos alunos. Escreve o texto adaptado à obra ou tema que estás a trabalhar em aula e adiciona-a ao banco para usar nos teus quizzes.
+        O banco tem <strong>sugestões do sistema</strong> — perguntas validadas sobre igualdade de género que podes usar diretamente nos teus quizzes. Podes também criar as tuas <strong>próprias perguntas</strong>, adaptadas às obras e turmas que trabalhas. As tuas perguntas ficam guardadas e disponíveis para todos os teus quizzes futuros.
       </PedagogicBox>
 
       {/* Painel de perguntas pendentes (admin) */}
@@ -543,10 +590,29 @@ export default function QuestionBank() {
 
       {/* ── Banco existente ── */}
       <div className="mt-8">
+        {/* Tabs: sugestões / minhas */}
+        <div className="flex gap-1 mb-4 bg-cream-dark rounded-xl p-1 max-w-sm">
+          <button
+            onClick={() => setBankTab("suggestions")}
+            className={`flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold py-2 rounded-lg transition-all ${
+              bankTab === "suggestions" ? "bg-white text-teal shadow-sm" : "text-muted-foreground hover:text-navy"
+            }`}
+          >
+            ✨ Sugestões ({suggestions?.length ?? 0})
+          </button>
+          <button
+            onClick={() => setBankTab("mine")}
+            className={`flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold py-2 rounded-lg transition-all ${
+              bankTab === "mine" ? "bg-white text-teal shadow-sm" : "text-muted-foreground hover:text-navy"
+            }`}
+          >
+            👤 As minhas ({myQuestions?.length ?? 0})
+          </button>
+        </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="text-base font-display font-bold text-navy">
-            Perguntas no Banco
-            {questions && <span className="text-muted-foreground font-normal text-sm ml-2">({questions.length})</span>}
+            {bankTab === "suggestions" ? "Sugestões do Sistema" : "As Minhas Perguntas"}
+            <span className="text-muted-foreground font-normal text-sm ml-2">({questions.length})</span>
           </h2>
           <div className="flex flex-wrap gap-2">
             <select
@@ -580,15 +646,23 @@ export default function QuestionBank() {
           </div>
         </div>
 
-        {!questions || questions.length === 0 ? (
+        {questions.length === 0 ? (
           <div className="av-card text-center py-12">
             <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">Nenhuma pergunta encontrada{hasFilters ? " com estes filtros" : ""}.</p>
+            {bankTab === "mine" ? (
+              <>
+                <p className="text-muted-foreground mb-2">Ainda não tens perguntas criadas.</p>
+                <p className="text-sm text-muted-foreground">Usa os modelos acima para criar a tua primeira pergunta.</p>
+              </>
+            ) : (
+              <p className="text-muted-foreground">Nenhuma sugestão encontrada{hasFilters ? " com estes filtros" : ""}.</p>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
             {questions.map((q) => {
               const opts = q.options ? (JSON.parse(q.options) as string[]) : [];
+              const isSystem = (q as any).isSystemSuggestion;
               return (
                 <div key={q.id} className="av-card hover:shadow-md transition-shadow">
                   <div className="flex items-start gap-3">
@@ -607,6 +681,9 @@ export default function QuestionBank() {
                         <span className="av-badge bg-cream-dark text-muted-foreground">
                           {TYPE_LABELS[q.type]}
                         </span>
+                        {isSystem && (
+                          <span className="av-badge bg-amber-100 text-amber-700">✨ Sugestão do sistema</span>
+                        )}
                         {q.literaryWork && (
                           <span className="av-badge bg-gold-light text-amber-900">📖 {q.literaryWork}</span>
                         )}
@@ -621,6 +698,85 @@ export default function QuestionBank() {
                               {opt}
                             </span>
                           ))}
+                        </div>
+                      )}
+                      {/* Ações: sugestões são read-only; perguntas do professor podem ser editadas/eliminadas */}
+                      {!isSystem && (
+                        <div className="mt-2">
+                          {editingId === q.id ? (
+                            <div className="space-y-3 mt-3 pt-3 border-t border-border">
+                              <div>
+                                <label className="block text-xs font-semibold text-navy mb-1">Texto da Pergunta *</label>
+                                <textarea
+                                  className="w-full border border-teal rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal resize-none"
+                                  rows={3}
+                                  value={editText}
+                                  onChange={(e) => setEditText(e.target.value)}
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-xs font-semibold text-navy mb-1">Tema</label>
+                                  <select className="w-full border border-border rounded-lg px-2 py-1.5 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-teal" value={editCategory} onChange={e => setEditCategory(e.target.value)}>
+                                    {Object.entries(CATEGORIES).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-navy mb-1">Sensibilidade</label>
+                                  <select className="w-full border border-border rounded-lg px-2 py-1.5 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-teal" value={editSensitivity} onChange={e => setEditSensitivity(e.target.value as any)}>
+                                    <option value="low">🟢 Baixa</option>
+                                    <option value="medium">🟡 Média</option>
+                                    <option value="high">🔴 Alta</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-navy mb-1">Nível de Ensino</label>
+                                  <select className="w-full border border-border rounded-lg px-2 py-1.5 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-teal" value={editEducationLevel} onChange={e => setEditEducationLevel(e.target.value)}>
+                                    {Object.entries(EDUCATION_LEVELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-navy mb-1">Disciplina</label>
+                                  <input className="w-full border border-border rounded-lg px-2 py-1.5 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-teal" placeholder="Ex: Português" value={editDiscipline} onChange={e => setEditDiscipline(e.target.value)} />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-navy mb-1">Obra Literária</label>
+                                <input className="w-full border border-border rounded-lg px-2 py-1.5 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-teal" placeholder="Ex: A Culpa é das Estrelas" value={editLiteraryWork} onChange={e => setEditLiteraryWork(e.target.value)} />
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => saveEdit(q)}
+                                  disabled={updateOwnQuestion.isPending}
+                                  className="text-xs bg-teal text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-teal-dark transition-colors"
+                                >
+                                  {updateOwnQuestion.isPending ? "A guardar..." : "Guardar"}
+                                </button>
+                                <button
+                                  onClick={() => setEditingId(null)}
+                                  className="text-xs text-muted-foreground hover:text-navy font-semibold px-2 py-1.5 transition-colors"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => startEdit(q)}
+                                className="text-xs text-teal hover:text-teal-dark font-semibold flex items-center gap-1 transition-colors"
+                              >
+                                ✏️ Editar
+                              </button>
+                              <button
+                                onClick={() => { if (window.confirm("Eliminar esta pergunta?")) deleteQuestion.mutate({ id: q.id }); }}
+                                disabled={deleteQuestion.isPending}
+                                className="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1 transition-colors"
+                              >
+                                <Trash2 className="w-3 h-3" /> Eliminar
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

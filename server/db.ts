@@ -192,13 +192,24 @@ export async function getQuestions(filters?: {
   discipline?: string;
   educationLevel?: string;
   approvedOnly?: boolean;
+  systemOnly?: boolean;     // apenas sugestões do sistema
+  teacherOnly?: boolean;    // apenas perguntas criadas por um professor
+  createdBy?: number;       // filtrar por professor específico
 }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
   if (filters?.approvedOnly !== false) {
-    // Por defeito só mostra perguntas aprovadas (isValidated=true ou isApproved=true)
     conditions.push(eq(questions.isValidated, true));
+  }
+  if (filters?.systemOnly) {
+    conditions.push(eq(questions.isSystemSuggestion, true));
+  }
+  if (filters?.teacherOnly) {
+    conditions.push(eq(questions.isSystemSuggestion, false));
+  }
+  if (filters?.createdBy !== undefined) {
+    conditions.push(eq(questions.createdBy, filters.createdBy));
   }
   if (filters?.category) conditions.push(eq(questions.category, filters.category as any));
   if (filters?.sensitivityLevel)

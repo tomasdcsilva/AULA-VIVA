@@ -59,6 +59,7 @@ export const questions = mysqlTable("questions", {
   educationLevel: mysqlEnum("educationLevel", ["2nd_cycle", "3rd_cycle", "secondary", "all"]).default("all").notNull(),
   isValidated: boolean("isValidated").default(false).notNull(),
   isApproved: boolean("isApproved").default(false).notNull(),
+  isSystemSuggestion: boolean("isSystemSuggestion").default(false).notNull(), // sugestão pré-definida do sistema
   submittedBy: int("submittedBy"), // userId do professor que submeteu
   createdBy: int("createdBy"), // userId
   createdAt: timestamp("createdAt").defaultNow().notNull(),

@@ -144,3 +144,14 @@
 - [x] Adicionar ecrã de boas-vindas com regras de segurança no KahootPlayer
 - [x] Adicionar campos excerto literário e tema central no QuizEditor
 - [x] Guardar excerto e tema na tabela quizzes (schema + migração)
+
+## Banco de perguntas — sugestões do sistema (Jun 2026)
+
+- [x] Adicionar coluna isSystemSuggestion à tabela questions (schema + migração)
+- [x] Marcar as 47 perguntas existentes como isSystemSuggestion=true via SQL
+- [x] Backend: questions.list devolve campo isSystemSuggestion
+- [x] QuizEditor: separar painel de sugestões do sistema das perguntas do professor
+- [x] QuizEditor: botão "Usar como base" nas sugestões (copia para pergunta editável do professor)
+- [x] QuestionBank: sugestões do sistema aparecem como read-only (sem editar/eliminar)
+- [x] QuestionBank: perguntas do professor aparecem com ações de editar/eliminar
+- [x] QuestionBank: adicionar ação 'Editar' às perguntas do professor (formulário pré-preenchido)

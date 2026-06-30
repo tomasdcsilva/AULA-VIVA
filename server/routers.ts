@@ -177,9 +177,33 @@ export const appRouter = router({
           discipline: z.string().optional(),
           educationLevel: z.string().optional(),
           approvedOnly: z.boolean().optional(),
+          systemOnly: z.boolean().optional(),
+          teacherOnly: z.boolean().optional(),
+          createdBy: z.number().optional(),
         }).optional()
       )
       .query(({ input }) => getQuestions(input)),
+
+    // Perguntas do professor autenticado
+    myQuestions: protectedProcedure
+      .input(z.object({
+        category: z.string().optional(),
+        educationLevel: z.string().optional(),
+      }).optional())
+      .query(({ input, ctx }) => getQuestions({
+        ...input,
+        createdBy: ctx.user.id,
+        approvedOnly: false,
+      })),
+
+    // Sugestões do sistema (pública, para o QuizEditor)
+    suggestions: publicProcedure
+      .input(z.object({
+        category: z.string().optional(),
+        educationLevel: z.string().optional(),
+        sensitivityLevel: z.string().optional(),
+      }).optional())
+      .query(({ input }) => getQuestions({ ...input, systemOnly: true })),
 
     // Perguntas pendentes de aprovação (admin)
     pending: protectedProcedure
@@ -253,16 +277,71 @@ export const appRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         const isAdmin = ctx.user.role === "admin";
+        // Perguntas criadas por professores são aprovadas automaticamente (são deles)
+        // Só perguntas submetidas para o banco global precisam de aprovação do admin
         await createQuestion({
           ...input,
           options: input.options ? JSON.stringify(input.options) : undefined,
           correctOption: input.correctOption ?? undefined,
-          isValidated: isAdmin,
-          isApproved: isAdmin,
+          isValidated: true,   // aprovadas automaticamente para uso próprio
+          isApproved: true,
+          isSystemSuggestion: false, // nunca é sugestão do sistema
           submittedBy: isAdmin ? undefined : ctx.user.id,
           createdBy: ctx.user.id,
         });
-        return { success: true, pending: !isAdmin };
+        return { success: true };
+      }),
+
+    // Atualizar pergunta própria (professor) ou qualquer uma (admin)
+    updateOwn: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          text: z.string().min(1).optional(),
+          options: z.array(z.string()).optional(),
+          category: z.string().optional(),
+          sensitivityLevel: z.enum(["low", "medium", "high"]).optional(),
+          educationLevel: z.enum(["2nd_cycle", "3rd_cycle", "secondary", "all"]).optional(),
+          discipline: z.string().optional(),
+          literaryWork: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { questions: qTable } = await import("../drizzle/schema");
+        const { eq: eqFn } = await import("drizzle-orm");
+        const rows = await db.select().from(qTable).where(eqFn(qTable.id, input.id)).limit(1);
+        const q = rows[0];
+        if (!q) throw new TRPCError({ code: "NOT_FOUND" });
+        if (q.isSystemSuggestion) throw new TRPCError({ code: "FORBIDDEN", message: "Não podes editar sugestões do sistema." });
+        if (q.createdBy !== ctx.user.id && ctx.user.role !== "admin")
+          throw new TRPCError({ code: "FORBIDDEN" });
+        const { id, options, category, ...rest } = input;
+        await db.update(qTable).set({
+          ...rest,
+          ...(category !== undefined ? { category: category as any } : {}),
+          ...(options !== undefined ? { options: JSON.stringify(options) } : {}),
+        }).where(eqFn(qTable.id, id));
+        return { success: true };
+      }),
+
+    // Eliminar pergunta própria (professor) ou qualquer uma (admin)
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { questions: qTable } = await import("../drizzle/schema");
+        const { eq: eqFn } = await import("drizzle-orm");
+        const rows = await db.select().from(qTable).where(eqFn(qTable.id, input.id)).limit(1);
+        const q = rows[0];
+        if (!q) throw new TRPCError({ code: "NOT_FOUND" });
+        if (q.isSystemSuggestion) throw new TRPCError({ code: "FORBIDDEN", message: "Não podes eliminar sugestões do sistema." });
+        if (q.createdBy !== ctx.user.id && ctx.user.role !== "admin")
+          throw new TRPCError({ code: "FORBIDDEN" });
+        await db.delete(qTable).where(eqFn(qTable.id, input.id));
+        return { success: true };
       }),
   }),
 
