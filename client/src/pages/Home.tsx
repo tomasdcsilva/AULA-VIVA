@@ -17,8 +17,8 @@ const steps = [
   },
   {
     num: "3",
-    title: "Debater",
-    desc: "A turma vê os resultados em gráficos e discute no chat com segurança.",
+    title: "Conversar",
+    desc: "A turma vê os resultados em gráficos e debate no chat com segurança e anonimato.",
     color: "bg-teal",
   },
   {
@@ -93,8 +93,7 @@ export default function Home() {
               Plataforma <span className="text-gold">Aula Viva</span>
             </h1>
             <p className="text-white/70 text-lg mb-8 leading-relaxed">
-              Quiz, votação anónima e debate orientado para leituras críticas sobre
-              desigualdade de género e relações tóxicas em contexto escolar.
+              Ler melhor. Votar sem medo. Conversar com segurança. Refletir com evidências.
             </p>
             <div className="flex flex-wrap gap-3">
               {isAuthenticated ? (
@@ -118,7 +117,7 @@ export default function Home() {
       <section className="max-w-6xl mx-auto px-4 py-16">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-display font-bold text-navy mb-2">Da leitura à reflexão.</h2>
-          <p className="text-muted-foreground">Uma aula que ganha vida através da participação segura.</p>
+          <p className="text-muted-foreground">Uma aula que ganha vida através da participação segura e anónima.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {steps.map((s) => (

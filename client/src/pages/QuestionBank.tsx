@@ -271,8 +271,8 @@ export default function QuestionBank() {
     <div className="av-section animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="av-section-title">Banco de Perguntas</h1>
-          <p className="av-section-subtitle">Perguntas organizadas por tipo e nível de ensino.</p>
+          <h1 className="av-section-title">Biblioteca do Professor</h1>
+          <p className="av-section-subtitle">Banco de perguntas validadas, organizadas por tema, tipo e nível de ensino.</p>
         </div>
         {isAdmin && (
           <button

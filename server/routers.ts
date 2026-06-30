@@ -472,23 +472,36 @@ export const appRouter = router({
 
         // Para cada sessão, buscar stats por pergunta
         const sessionStats = await Promise.all(
-          quizSessions.map(async (s) => ({
-            sessionId: s.id,
-            code: s.code,
-            status: s.status,
-            mode: s.mode,
-            participantCount: s.participantCount,
-            createdAt: s.createdAt,
-            questionStats: await Promise.all(
-              sessionQs.map(async (q) => ({
-                questionId: q.id,
-                text: q.text,
-                type: q.type,
-                options: q.options ? JSON.parse(q.options) as string[] : [],
-                stats: await getResponseStats(s.id, q.id),
-              }))
-            ),
-          }))
+          quizSessions.map(async (s) => {
+            const messages = await getAllChatMessages(s.id);
+            const visibleMessages = messages.filter((m) => !m.isHidden);
+            const sensitiveCount = messages.filter((m) => m.isSensitive).length;
+            const highlightedMessages = messages.filter((m) => m.isHighlighted).map((m) => m.content);
+            return {
+              sessionId: s.id,
+              code: s.code,
+              status: s.status,
+              mode: s.mode,
+              participantCount: s.participantCount,
+              createdAt: s.createdAt,
+              className: (s as any).className ?? "",
+              sessionDate: (s as any).sessionDate ?? s.createdAt,
+              chatSummary: {
+                totalMessages: visibleMessages.length,
+                sensitiveCount,
+                highlightedMessages,
+              },
+              questionStats: await Promise.all(
+                sessionQs.map(async (q) => ({
+                  questionId: q.id,
+                  text: q.text,
+                  type: q.type,
+                  options: q.options ? JSON.parse(q.options) as string[] : [],
+                  stats: await getResponseStats(s.id, q.id),
+                }))
+              ),
+            };
+          })
         );
 
         return {

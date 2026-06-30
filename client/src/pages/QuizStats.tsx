@@ -8,6 +8,7 @@ import {
   Gamepad2,
   Users,
   MessageSquare,
+  MessageCircle,
   AlertTriangle,
   TrendingUp,
   CheckCircle2,
@@ -275,15 +276,26 @@ export default function QuizStats() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-mono font-black text-navy text-xl tracking-widest">{session.code}</span>
                         <span className="av-badge bg-gray-100 text-gray-600">Encerrado</span>
+                        {session.mode === "kahoot" && <span className="av-badge bg-purple-100 text-purple-700">Modo Jogo</span>}
+                        {(session as any).className && <span className="av-badge bg-teal-light text-teal font-semibold">👥 {(session as any).className}</span>}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(session.createdAt).toLocaleDateString("pt-PT", {
+                        {new Date((session as any).sessionDate ?? session.createdAt).toLocaleDateString("pt-PT", {
                           day: "2-digit", month: "long", year: "numeric",
                         })}
                         {" · "}
                         <span className="font-semibold text-navy">{session.participantCount} aluno(s)</span>
                         {" · "}
                         <span className="font-semibold text-teal">{responseRate}% de taxa de resposta</span>
+                        {(session as any).chatSummary?.totalMessages > 0 && (
+                          <>
+                            {" · "}
+                            <span className="text-muted-foreground">{(session as any).chatSummary.totalMessages} mensagem(ns) no chat</span>
+                            {(session as any).chatSummary.sensitiveCount > 0 && (
+                              <span className="text-red-600 font-semibold ml-1">⚠️ {(session as any).chatSummary.sensitiveCount} sensível(is)</span>
+                            )}
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -417,7 +429,24 @@ export default function QuizStats() {
                   </div>
                 )}
 
-                {/* Secção 4: Pistas de reflexão */}
+                {/* Secção 4: Excertos do chat (anonimizados) */}
+                {(session as any).chatSummary?.highlightedMessages?.length > 0 && (
+                  <div className="av-card border border-gold/30 bg-gold-light/20">
+                    <h3 className="font-display font-bold text-navy mb-3 flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-amber-600" /> Tópicos Emergentes do Chat
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-3">Mensagens destacadas pelo professor durante a sessão (anonimizadas):</p>
+                    <ul className="space-y-2">
+                      {(session as any).chatSummary.highlightedMessages.map((msg: string, i: number) => (
+                        <li key={i} className="text-sm text-navy bg-white rounded-lg px-3 py-2 border border-gold/20 italic">
+                          “{msg}”
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Secção 5: Pistas de reflexão */}
                 <div className="av-card bg-teal-light/30 border border-teal/20">
                   <h3 className="font-display font-bold text-navy mb-3 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-teal" /> Pistas para a Próxima Aula

@@ -142,7 +142,7 @@ export default function KahootPlayer() {
             </div>
             <div className="flex items-start gap-3">
               <span className="text-teal text-lg flex-shrink-0">📞</span>
-              <p className="text-white/80 text-sm">Se precisares de apoio, fala com o teu professor ou liga para a <strong className="text-white">Linha SOS Estudante: 800 209 080</strong> (gratuita, 24h).</p>
+              <p className="text-white/80 text-sm">Se precisares de apoio ou te sentires desconfortável, fala com o teu professor ou com o <strong className="text-white">psicólogo(a) da escola</strong>.</p>
             </div>
           </div>
 
