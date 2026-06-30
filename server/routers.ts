@@ -413,16 +413,28 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    delete: protectedProcedure
+        delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
         const quiz = await getQuizById(input.id);
         if (!quiz) throw new TRPCError({ code: "NOT_FOUND" });
-        if (quiz.createdBy !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+        if (quiz.createdBy !== ctx.user.id && ctx.user.role !== "admin")
+          throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { sessions: sessTable, sessionResponses, chatMessages } = await import("../drizzle/schema");
+        const { eq: eqFn, inArray } = await import("drizzle-orm");
+        // Buscar todas as sessões deste quiz
+        const quizSessions = await db.select({ id: sessTable.id }).from(sessTable).where(eqFn(sessTable.quizId, input.id));
+        const sessionIds = quizSessions.map(s => s.id);
+        if (sessionIds.length > 0) {
+          await db.delete(sessionResponses).where(inArray(sessionResponses.sessionId, sessionIds));
+          await db.delete(chatMessages).where(inArray(chatMessages.sessionId, sessionIds));
+          await db.delete(sessTable).where(inArray(sessTable.id, sessionIds));
+        }
         await deleteQuiz(input.id);
         return { success: true };
       }),
-
     duplicate: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
@@ -482,13 +494,13 @@ export const appRouter = router({
         return {
           quiz,
           questions: sessionQs,
-          sessions: sessionStats,
+                    sessions: sessionStats,
           totalSessions: quizSessions.length,
           totalParticipants: quizSessions.reduce((s, sess) => s + sess.participantCount, 0),
         };
       }),
-  }),
 
+  }),
   // ── Sessões ───────────────────────────────────────────────────────────────
   sessions: router({
     create: protectedProcedure
@@ -600,6 +612,26 @@ export const appRouter = router({
         const s = await getSessionById(input.sessionId);
         if (!s) throw new TRPCError({ code: "NOT_FOUND" });
         return { status: s.status, chatEnabled: s.chatEnabled, chatPaused: s.chatPaused };
+      }),
+
+    // Eliminar sessão e todos os dados associados
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { sessions: sessTable, sessionResponses, chatMessages } = await import("../drizzle/schema");
+        const { eq: eqFn } = await import("drizzle-orm");
+        const rows = await db.select().from(sessTable).where(eqFn(sessTable.id, input.id)).limit(1);
+        const s = rows[0];
+        if (!s) throw new TRPCError({ code: "NOT_FOUND" });
+        if (s.teacherId !== ctx.user.id && ctx.user.role !== "admin")
+          throw new TRPCError({ code: "FORBIDDEN" });
+        // Eliminar dados associados primeiro (respostas e chat)
+        await db.delete(sessionResponses).where(eqFn(sessionResponses.sessionId, input.id));
+        await db.delete(chatMessages).where(eqFn(chatMessages.sessionId, input.id));
+        await db.delete(sessTable).where(eqFn(sessTable.id, input.id));
+        return { success: true };
       }),
   }),
 
