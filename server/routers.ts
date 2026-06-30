@@ -666,7 +666,28 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const s = await getSessionById(input.sessionId);
         if (!s) throw new TRPCError({ code: "NOT_FOUND" });
-        return getResponseStats(input.sessionId, input.questionId);
+        const raw = await getResponseStats(input.sessionId, input.questionId);
+        // Enriquecer com labels legíveis
+        const SCALE_LABELS: Record<string, string> = {
+          "0": "Concordo totalmente",
+          "1": "Concordo parcialmente",
+          "2": "Discordo parcialmente",
+          "3": "Discordo totalmente",
+        };
+        // Buscar a pergunta para obter as opções
+        const allQs = await getQuestions();
+        const q = allQs.find((x) => x.id === input.questionId);
+        return raw.map((r) => {
+          let label = r.answer;
+          if (q?.type === "scale") {
+            label = SCALE_LABELS[r.answer] ?? r.answer;
+          } else if (q?.type === "multiple_choice" && q.options) {
+            const opts = JSON.parse(q.options) as string[];
+            const idx = Number(r.answer);
+            if (!isNaN(idx) && opts[idx]) label = opts[idx];
+          }
+          return { ...r, answer: label };
+        });
       }),
   }),
 
