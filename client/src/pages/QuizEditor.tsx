@@ -55,6 +55,7 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const [yearGroup, setYearGroup] = useState("");
   const [className, setClassName] = useState("");
   const [showResultsImmediately, setShowResultsImmediately] = useState(false);
+  const [hideAllResults, setHideAllResults] = useState(false);
   const [hiddenResultsIds, setHiddenResultsIds] = useState<number[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDirty, setIsDirty] = useState(false);
@@ -105,7 +106,11 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
       setYearGroup(existingQuiz.yearGroup ?? "");
       setClassName(existingQuiz.className ?? "");
       setShowResultsImmediately(existingQuiz.showResultsImmediately);
-      setHiddenResultsIds(JSON.parse((existingQuiz as any).hiddenResultsQuestionIds ?? "[]"));
+      const hiddenIds = JSON.parse((existingQuiz as any).hiddenResultsQuestionIds ?? "[]") as number[];
+      const allQIds = JSON.parse(existingQuiz.questionIds ?? "[]") as number[];
+      const isHideAll = allQIds.length > 0 && allQIds.every((id) => hiddenIds.includes(id));
+      setHideAllResults(isHideAll);
+      setHiddenResultsIds(hiddenIds);
       setSelectedIds(JSON.parse(existingQuiz.questionIds ?? "[]"));
       setTimeout(() => setDataLoaded(true), 100);
     } else if (!isEdit) {
@@ -141,7 +146,7 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
 
   useEffect(() => {
     if (dataLoaded) setIsDirty(true);
-  }, [title, description, literaryWork, excerpt, theme, discipline, yearGroup, className, showResultsImmediately, hiddenResultsIds, selectedIds]);
+  }, [title, description, literaryWork, excerpt, theme, discipline, yearGroup, className, showResultsImmediately, hideAllResults, hiddenResultsIds, selectedIds]);
 
   const toggleHideResults = (qId: number) => {
     setHiddenResultsIds((prev) =>
@@ -160,7 +165,8 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
   const handleSave = () => {
     if (!title.trim()) { toast.error("O título é obrigatório."); return; }
     if (selectedIds.length === 0) { toast.error("Seleciona pelo menos uma pergunta."); return; }
-    const payload = { title, description, literaryWork, excerpt: excerpt || undefined, theme: theme || undefined, discipline, yearGroup, className, showResultsImmediately, hiddenResultsQuestionIds: hiddenResultsIds, questionIds: selectedIds };
+    const effectiveHiddenIds = hideAllResults ? selectedIds : hiddenResultsIds;
+    const payload = { title, description, literaryWork, excerpt: excerpt || undefined, theme: theme || undefined, discipline, yearGroup, className, showResultsImmediately: hideAllResults ? false : showResultsImmediately, hiddenResultsQuestionIds: effectiveHiddenIds, questionIds: selectedIds };
     setSavedOnce(true);
     if (isEdit) updateQuiz.mutate({ id: numericId, ...payload });
     else createQuiz.mutate(payload);
@@ -290,9 +296,18 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
             <textarea className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card resize-none" rows={3} placeholder="Contexto pedagógico desta atividade..." value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
-          <div className="flex items-center gap-3 p-4 bg-cream-dark rounded-xl">
-            <input type="checkbox" id="showResults" checked={showResultsImmediately} onChange={(e) => setShowResultsImmediately(e.target.checked)} className="w-4 h-4 accent-teal" />
-            <label htmlFor="showResults" className="text-sm font-semibold text-navy cursor-pointer">Mostrar resultados em tempo real aos alunos</label>
+          <div className="space-y-2">
+            <div className={`flex items-center gap-3 p-4 bg-cream-dark rounded-xl transition-opacity ${hideAllResults ? 'opacity-40 pointer-events-none' : ''}`}>
+              <input type="checkbox" id="showResults" checked={showResultsImmediately && !hideAllResults} onChange={(e) => setShowResultsImmediately(e.target.checked)} className="w-4 h-4 accent-teal" disabled={hideAllResults} />
+              <label htmlFor="showResults" className="text-sm font-semibold text-navy cursor-pointer">Mostrar resultados em tempo real aos alunos</label>
+            </div>
+            <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <input type="checkbox" id="hideAllResults" checked={hideAllResults} onChange={(e) => { setHideAllResults(e.target.checked); if (e.target.checked) setShowResultsImmediately(false); }} className="w-4 h-4 accent-amber-500" />
+              <div>
+                <label htmlFor="hideAllResults" className="text-sm font-semibold text-amber-800 cursor-pointer">Resultados apenas no relatório</label>
+                <p className="text-xs text-amber-600 mt-0.5">Nenhuma pergunta mostra gráficos à turma. Os dados são recolhidos e aparecem no relatório pedagógico.</p>
+              </div>
+            </div>
           </div>
 
           <div className="pt-2">
