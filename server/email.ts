@@ -39,12 +39,11 @@ export async function sendVerificationEmail(email: string, name: string, token: 
   });
 }
 
-export async function sendPasswordResetEmail(email: string, name: string, token: string) {
-  const link = `${APP_URL}/reset-password?token=${token}`;
+export async function sendPasswordResetEmail(email: string, name: string, code: string) {
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: "Recuperação de password — Aula Viva",
+    subject: "Código de recuperação de password — Aula Viva",
     html: `
       <div style="font-family: 'Nunito', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #f9f5ef; padding: 32px; border-radius: 16px;">
         <div style="text-align: center; margin-bottom: 24px;">
@@ -54,15 +53,16 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
         </div>
         <h2 style="color: #1a3a4a; font-size: 22px; margin-bottom: 8px;">Recuperar password</h2>
         <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
-          Recebemos um pedido para redefinir a password da conta associada a <strong>${email}</strong>. Clica no botão abaixo para criar uma nova password:
+          Recebemos um pedido para redefinir a password da conta <strong>${email}</strong>. Usa o código abaixo na plataforma:
         </p>
         <div style="text-align: center; margin-bottom: 28px;">
-          <a href="${link}" style="background: #2a7a6a; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 15px; display: inline-block;">
-            Redefinir Password
-          </a>
+          <div style="display: inline-block; background: #1a3a4a; border-radius: 16px; padding: 20px 40px;">
+            <span style="color: white; font-size: 48px; font-weight: 900; letter-spacing: 12px; font-family: monospace;">${code}</span>
+          </div>
+          <p style="color: #6b7280; font-size: 13px; margin-top: 12px;">Este código expira em 15 minutos.</p>
         </div>
         <p style="color: #9ca3af; font-size: 13px; text-align: center;">
-          Este link expira em 1 hora. Se não pediste a recuperação, podes ignorar este email.
+          Se não pediste a recuperação, podes ignorar este email.
         </p>
         <hr style="border: none; border-top: 1px solid #e5e0d8; margin: 24px 0;" />
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">

@@ -185,3 +185,11 @@
 - [x] Backend: endpoint auth.updateProfile para editar nome e escola
 - [x] Frontend: página /profile com formulário de edição de nome e escola
 - [x] Navegação: link para perfil no menu (nome do utilizador clicável)
+
+## Recuperação de Password com Código de 4 Dígitos (Jun 2026)
+
+- [ ] Backend: gerar código de 4 dígitos em vez de token URL, guardar em resetToken
+- [ ] Backend: endpoint auth.verifyResetCode para validar o código e devolver token temporário
+- [ ] Backend: endpoint auth.resetPasswordWithCode para redefinir password com código validado
+- [ ] Email: mostrar o código de 4 dígitos em destaque no email
+- [ ] Frontend: ecrã após "Email enviado!" com input de 4 dígitos + nova password

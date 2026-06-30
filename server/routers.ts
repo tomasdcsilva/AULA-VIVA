@@ -41,6 +41,7 @@ import {
   registerUser,
   rejectQuestion,
   resetPassword,
+  resetPasswordWithCode,
   saveChatMessage,
   saveKahootResponse,
   saveResponse,
@@ -151,6 +152,17 @@ export const appRouter = router({
         catch (e: any) {
           if (e.message === "INVALID_TOKEN") throw new Error("Link inválido ou já utilizado.");
           if (e.message === "TOKEN_EXPIRED") throw new Error("Este link expirou. Pede um novo.");
+          throw e;
+        }
+      }),
+
+    resetPasswordWithCode: publicProcedure
+      .input(z.object({ email: z.string().email(), code: z.string().length(4), password: z.string().min(8) }))
+      .mutation(async ({ input }) => {
+        try { await resetPasswordWithCode(input.email, input.code, input.password); return { success: true }; }
+        catch (e: any) {
+          if (e.message === "INVALID_CODE") throw new Error("Código inválido. Verifica o email e tenta novamente.");
+          if (e.message === "CODE_EXPIRED") throw new Error("O código expirou. Pede um novo.");
           throw e;
         }
       }),

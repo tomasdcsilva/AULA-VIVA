@@ -164,8 +164,9 @@ export async function createPasswordResetToken(email: string) {
   const user = await getUserByEmail(email);
   if (!user) return null; // silencioso por segurança
 
-  const resetToken = nanoid(48);
-  const resetTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
+  // Código de 4 dígitos (1000-9999)
+  const resetToken = String(Math.floor(1000 + Math.random() * 9000));
+  const resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
 
   await db.update(users)
     .set({ resetToken, resetTokenExpiresAt })
@@ -183,6 +184,24 @@ export async function resetPassword(token: string, newPassword: string) {
   if (!user) throw new Error("INVALID_TOKEN");
   if (user.resetTokenExpiresAt && user.resetTokenExpiresAt < new Date())
     throw new Error("TOKEN_EXPIRED");
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await db.update(users)
+    .set({ passwordHash, resetToken: null, resetTokenExpiresAt: null })
+    .where(eq(users.id, user.id));
+
+  return user;
+}
+
+export async function resetPasswordWithCode(email: string, code: string, newPassword: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+
+  const user = await getUserByEmail(email);
+  if (!user) throw new Error("INVALID_CODE");
+  if (user.resetToken !== code) throw new Error("INVALID_CODE");
+  if (user.resetTokenExpiresAt && user.resetTokenExpiresAt < new Date())
+    throw new Error("CODE_EXPIRED");
 
   const passwordHash = await bcrypt.hash(newPassword, 12);
   await db.update(users)
