@@ -200,3 +200,10 @@
 - [x] Chat: indicação de canais de apoio visíveis (linha de apoio, psicólogo escolar)
 - [x] Relatório: exportação em Excel/CSV com dados da sessão e respostas por pergunta
 - [x] Manual de utilização para professores disponível na plataforma (página /manual)
+
+## Seed de Perguntas do Sistema (Jun 2026)
+
+- [x] Corrigir script seed-questions.mjs para usar valores ENUM válidos (category, educationLevel, type)
+- [x] Inserir 19 perguntas do sistema na base de dados com isSystemSuggestion=1, isValidated=1, isApproved=1
+- [x] Corrigir 4 perguntas antigas (isSystemSuggestion=0 → 1, isValidated=0 → 1)
+- [x] Verificar que a Biblioteca do Professor mostra 23 sugestões do sistema

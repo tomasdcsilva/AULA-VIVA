@@ -199,7 +199,7 @@ export default function Dashboard() {
   const completedSessions = sessions?.filter((s) => s.status === "closed") ?? [];
 
   return (
-    <div className="av-section animate-fade-in">
+    <div className="av-section animate-fade-in flex-1">
       {/* Modal de lançamento */}
       {launchQuiz && (
         <LaunchModal
