@@ -1,5 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { BookOpen, Home, LogOut, Menu, X } from "lucide-react";
+import { BookOpen, Home, LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -52,7 +52,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <span className="text-white/70 text-sm">{user?.name}</span>
+                <Link
+                  href="/profile"
+                  className="text-white/70 hover:text-white text-sm transition-colors hover:underline"
+                >
+                  {user?.name}
+                </Link>
                 <button
                   onClick={() => logout()}
                   className="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors"
@@ -95,13 +100,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
             {isAuthenticated ? (
-              <button
-                onClick={() => { logout(); setMenuOpen(false); }}
-                className="flex items-center gap-2 py-3 text-white/60 hover:text-white text-sm w-full"
-              >
-                <LogOut className="w-4 h-4" />
-                Sair
-              </button>
+              <>
+                <Link
+                  href="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-3 text-white/80 hover:text-white font-semibold border-b border-white/10"
+                >
+                  <User className="w-4 h-4" />
+                  {user?.name || "Perfil"}
+                </Link>
+                <button
+                  onClick={() => { logout(); setMenuOpen(false); }}
+                  className="flex items-center gap-2 py-3 text-white/60 hover:text-white text-sm w-full"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sair
+                </button>
+              </>
             ) : (
               <a
                 href="/login"

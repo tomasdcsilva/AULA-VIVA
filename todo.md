@@ -179,3 +179,9 @@
 - [x] SessionManager: botão "Encerrar Sessão" disponível em todos os estados ativos
 - [x] Relatório PDF: calcular duração da sessão (closedAt - createdAt)
 - [x] Exportação do relatório em PDF real via Puppeteer (rota /api/report/:id/pdf)
+
+## Página de Perfil do Professor (Jun 2026)
+
+- [x] Backend: endpoint auth.updateProfile para editar nome e escola
+- [x] Frontend: página /profile com formulário de edição de nome e escola
+- [x] Navegação: link para perfil no menu (nome do utilizador clicável)

@@ -119,6 +119,12 @@ export async function registerUser(data: { name: string; email: string; password
   return { user: created!, verificationToken };
 }
 
+export async function updateUserProfile(userId: number, data: { name: string; school: string | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(users).set({ name: data.name, school: data.school }).where(eq(users.id, userId));
+}
+
 export async function loginUser(email: string, password: string) {
   const user = await getUserByEmail(email);
   if (!user || !user.passwordHash) throw new Error("INVALID_CREDENTIALS");

@@ -47,6 +47,7 @@ import {
   updateQuestion,
   updateQuiz,
   updateSession,
+  updateUserProfile,
   verifyEmail,
 } from "./db";
 import { sendVerificationEmail, sendPasswordResetEmail } from "./email";
@@ -152,6 +153,13 @@ export const appRouter = router({
           if (e.message === "TOKEN_EXPIRED") throw new Error("Este link expirou. Pede um novo.");
           throw e;
         }
+      }),
+
+    updateProfile: protectedProcedure
+      .input(z.object({ name: z.string().min(2), school: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        await updateUserProfile(ctx.user.id, { name: input.name, school: input.school ?? null });
+        return { success: true };
       }),
 
     meWithLocal: publicProcedure.query(async ({ ctx }) => {

@@ -23,6 +23,7 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ProjectionView from "./pages/ProjectionView";
 import QuizStats from "./pages/QuizStats";
+import Profile from "./pages/Profile";
 
 function Router() {
   return (
@@ -60,6 +61,7 @@ function Router() {
         {(params) => <Layout><QuizStats /></Layout>}
       </Route>
       <Route path="/coordination" component={() => <Layout><Coordination /></Layout>} />
+      <Route path="/profile" component={() => <Layout><Profile /></Layout>} />
 
       <Route path="/404" component={() => <Layout><NotFound /></Layout>} />
       <Route component={() => <Layout><NotFound /></Layout>} />
