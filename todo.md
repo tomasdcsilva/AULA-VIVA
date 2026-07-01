@@ -217,3 +217,7 @@
 - [x] Endpoint backend: exportar todos os dados (utilizadores, quizzes, sessões, respostas, chat) em JSON
 - [x] Página /coordination/export com botões de download por tabela e exportação completa
 - [x] Registar rota em App.tsx e adicionar link no painel de coordenação
+
+## PDF — Diálogo "Guardar Como" (Jul 2026)
+
+- [x] Botão "Exportar PDF" no SessionManager abre o PDF numa nova aba para o professor poder escolher onde guardar (em vez de descarregar diretamente para Downloads)

@@ -406,12 +406,17 @@ export default function SessionManager() {
                   if (!res.ok) throw new Error("Erro ao gerar PDF");
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = `relatorio_${report.sessionCode}_${new Date().toISOString().slice(0, 10)}.pdf`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                  toast.success("PDF descarregado!", { id: "pdf" });
+                  // Abrir numa nova aba para o browser mostrar o diálogo "Guardar Como"
+                  const w = window.open(url, "_blank");
+                  if (!w) {
+                    // Fallback: se o popup foi bloqueado, descarregar diretamente
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `relatorio_${report.sessionCode}_${new Date().toISOString().slice(0, 10)}.pdf`;
+                    a.click();
+                  }
+                  setTimeout(() => URL.revokeObjectURL(url), 10000);
+                  toast.success("PDF pronto — guarde a partir do visualizador!", { id: "pdf" });
                 } catch (e) {
                   toast.error("Erro ao gerar PDF", { id: "pdf" });
                 }
