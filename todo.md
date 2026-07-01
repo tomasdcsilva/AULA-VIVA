@@ -207,3 +207,7 @@
 - [x] Inserir 19 perguntas do sistema na base de dados com isSystemSuggestion=1, isValidated=1, isApproved=1
 - [x] Corrigir 4 perguntas antigas (isSystemSuggestion=0 → 1, isValidated=0 → 1)
 - [x] Verificar que a Biblioteca do Professor mostra 23 sugestões do sistema
+
+## Correções Técnicas (Jul 2026)
+
+- [x] Corrigir bug nas estatísticas do PDF: perguntas de escolha múltipla comparavam texto com índices numéricos (sempre 0%). Agora converte índices → texto das opções. Perguntas de escala também corrigidas. Perguntas abertas mostram respostas únicas.

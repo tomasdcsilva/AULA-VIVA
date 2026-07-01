@@ -192,14 +192,50 @@ export function registerPdfExport(app: Express) {
         .where(and(eq(chatMessages.sessionId, sessionId), eq(chatMessages.isHidden, false)));
 
       // Calcular estatísticas por pergunta
+      const SCALE_LABELS: Record<string, string> = {
+        "0": "Concordo totalmente",
+        "1": "Concordo parcialmente",
+        "2": "Discordo parcialmente",
+        "3": "Discordo totalmente",
+      };
+
       const questionStats = allQuestions.map(q => {
         const qResponses = responses.filter(r => r.questionId === q.id);
         const options: string[] = JSON.parse(q.options ?? "[]");
-        const stats = options.map(opt => {
-          const count = qResponses.filter(r => r.answer === opt).length;
-          const percentage = qResponses.length > 0 ? Math.round((count / qResponses.length) * 100) : 0;
-          return { answer: opt, count, percentage };
+
+        if (q.type === "scale") {
+          // Respostas de escala são guardadas como "0", "1", "2", "3"
+          const scaleOptions = ["0", "1", "2", "3"];
+          const stats = scaleOptions.map(val => {
+            const count = qResponses.filter(r => r.answer === val).length;
+            const percentage = qResponses.length > 0 ? Math.round((count / qResponses.length) * 100) : 0;
+            return { answer: SCALE_LABELS[val] ?? val, count, percentage };
+          });
+          return { question: q.text, stats };
+        }
+
+        if (q.type === "multiple_choice") {
+          // Respostas de escolha múltipla são guardadas como índices numéricos ("0", "1", "2", ...)
+          const stats = options.map((opt, idx) => {
+            const count = qResponses.filter(r => r.answer === String(idx)).length;
+            const percentage = qResponses.length > 0 ? Math.round((count / qResponses.length) * 100) : 0;
+            return { answer: opt, count, percentage };
+          });
+          return { question: q.text, stats };
+        }
+
+        // Perguntas abertas — listar respostas únicas
+        const answerMap = new Map<string, number>();
+        qResponses.forEach(r => {
+          if (r.answer && r.answer !== "__skip__") {
+            answerMap.set(r.answer, (answerMap.get(r.answer) ?? 0) + 1);
+          }
         });
+        const stats = Array.from(answerMap.entries()).map(([answer, count]) => ({
+          answer,
+          count,
+          percentage: qResponses.length > 0 ? Math.round((count / qResponses.length) * 100) : 0,
+        }));
         return { question: q.text, stats };
       });
 
