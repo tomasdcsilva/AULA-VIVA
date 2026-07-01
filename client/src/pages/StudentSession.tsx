@@ -197,25 +197,49 @@ export default function StudentSession() {
                   {activeQ.text}
                 </h2>
 
-                {/* Múltipla escolha */}
-                {activeQ.type === "multiple_choice" && (
-                  <div className="space-y-2">
-                    {activeQ.options.map((opt) => (
-                      <button
-                        key={opt}
-                        disabled={submitted[activeQ.id] || currentStatus === "voting_closed"}
-                        onClick={() => setAnswers((prev) => ({ ...prev, [activeQ.id]: opt }))}
-                        className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                          answers[activeQ.id] === opt
-                            ? "border-teal bg-teal-light text-teal-dark"
-                            : "border-border bg-card hover:border-teal/40 text-navy"
-                        } disabled:cursor-not-allowed`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {/* Múltipla escolha — cartões coloridos */}
+                {activeQ.type === "multiple_choice" && (() => {
+                  const CARD_COLORS = [
+                    { bg: "#e21b3c", hover: "#c41535" },
+                    { bg: "#1368ce", hover: "#0f55b0" },
+                    { bg: "#d89e00", hover: "#b88600" },
+                    { bg: "#26890c", hover: "#1e6e09" },
+                    { bg: "#7c3aed", hover: "#6b2fd4" },
+                    { bg: "#0891b2", hover: "#0778a0" },
+                  ];
+                  const SHAPES = ["▲", "◆", "●", "■", "★", "♥"];
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      {activeQ.options.map((opt, i) => {
+                        const color = CARD_COLORS[i % CARD_COLORS.length];
+                        const isSelected = answers[activeQ.id] === opt;
+                        const isDisabled = submitted[activeQ.id] || currentStatus === "voting_closed";
+                        return (
+                          <button
+                            key={opt}
+                            disabled={isDisabled}
+                            onClick={() => !isDisabled && setAnswers((prev) => ({ ...prev, [activeQ.id]: opt }))}
+                            style={{
+                              backgroundColor: color.bg,
+                              opacity: isDisabled && !isSelected ? 0.55 : 1,
+                              outline: isSelected ? "3px solid white" : "none",
+                              outlineOffset: "2px",
+                              transform: isSelected ? "scale(0.97)" : "scale(1)",
+                              transition: "all 0.15s ease-out",
+                            }}
+                            className="relative flex flex-col items-center justify-center gap-2 rounded-2xl px-3 py-4 min-h-[90px] text-white font-bold text-sm text-center shadow-md active:scale-95 disabled:cursor-not-allowed"
+                          >
+                            <span className="text-xl opacity-80">{SHAPES[i % SHAPES.length]}</span>
+                            <span className="leading-snug">{opt}</span>
+                            {isSelected && (
+                              <span className="absolute top-2 right-2 text-white text-xs bg-white/20 rounded-full w-5 h-5 flex items-center justify-center">✓</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
                 {/* Escala */}
                 {activeQ.type === "scale" && (

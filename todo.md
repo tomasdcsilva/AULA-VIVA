@@ -221,3 +221,7 @@
 ## PDF — Diálogo "Guardar Como" (Jul 2026)
 
 - [x] Botão "Exportar PDF" no SessionManager abre o PDF numa nova aba para o professor poder escolher onde guardar (em vez de descarregar diretamente para Downloads)
+
+## Cartões Coloridos nas Opções (Jul 2026)
+
+- [x] Opções de múltipla escolha no ecrã do aluno redesenhadas como cartões coloridos (estilo Kahoot) com símbolo e texto visível em grelha 2x2
