@@ -110,8 +110,25 @@ export default function KahootHost() {
       setShowingResults(false);
       setTimeLeft(kahootState.timeRemaining);
     } else if (kahootState.status === "voting_closed" && phase === "question") {
-      setPhase("results");
-      setShowingResults(true);
+      // Se a pergunta está marcada como "apenas no relatório", avançar automaticamente
+      const hiddenIds: number[] = quiz?.hiddenResultsQuestionIds
+        ? JSON.parse((quiz as any).hiddenResultsQuestionIds)
+        : [];
+      const currentQId = quiz ? (JSON.parse(quiz.questionIds) as number[])[kahootState.activeQuestionIndex] : null;
+      if (currentQId && hiddenIds.includes(currentQId)) {
+        // Avançar automaticamente sem mostrar resultados
+        const next = kahootState.activeQuestionIndex + 1;
+        const total = quiz ? (JSON.parse(quiz.questionIds) as number[]).length : 0;
+        if (next >= total) {
+          setPhase("leaderboard");
+          updateSession.mutate({ id: sessionId, status: "closed" });
+        } else {
+          handleLaunchQuestion(next);
+        }
+      } else {
+        setPhase("results");
+        setShowingResults(true);
+      }
     }
   }, [kahootState]);
 
@@ -300,24 +317,25 @@ export default function KahootHost() {
 
         {/* ── RESULTADOS DA PERGUNTA ── */}
         {phase === "results" && activeQuestion && qStats && (
-          <div className="w-full max-w-3xl">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-display font-bold mb-1">Distribuição de Opiniões</h2>
-              <p className="text-white/60 text-sm">{activeQuestion.text.replace(/\?+$/, '')}</p>
+          <div className="w-full max-w-4xl flex flex-col gap-4">
+            {/* Cabeçalho */}
+            <div className="text-center">
+              <p className="text-white/50 text-xs uppercase tracking-widest mb-1">Pergunta {currentQIndex + 1} / {totalQuestions}</p>
+              <h2 className="text-2xl font-display font-bold leading-snug">{activeQuestion.text.replace(/\?+$/, '')}</h2>
             </div>
 
             {/* Respostas abertas */}
             {activeQuestion.type === "open" && openAnswers && openAnswers.length > 0 && (
-              <div className="space-y-2 mb-6">
+              <div className="grid grid-cols-2 gap-3">
                 {openAnswers.map((ans, i) => (
-                  <div key={i} className="bg-white/10 rounded-xl px-4 py-3 text-white/90 text-sm italic">
-                    "{ans}"
+                  <div key={i} className="bg-white/10 rounded-xl px-4 py-4 text-white/90 text-sm italic">
+                    “{ans}”
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Gráfico de barras — só mostra se não estiver marcado como "apenas no relatório" */}
+            {/* Barras de resultados — só mostra se não for "apenas no relatório" */}
             {(activeQuestion.type === "scale" || activeQuestion.options) && activeQuestion.type !== "open" &&
               !(() => {
                 const hiddenIds: number[] = quiz?.hiddenResultsQuestionIds
@@ -325,7 +343,7 @@ export default function KahootHost() {
                   : [];
                 return activeQId ? hiddenIds.includes(activeQId) : false;
               })() && (
-              <div className="space-y-3 mb-6">
+              <div className="space-y-4">
                 {(activeQuestion.type === "scale"
                   ? SCALE_OPTIONS
                   : (JSON.parse(activeQuestion.options!) as string[])
@@ -333,14 +351,14 @@ export default function KahootHost() {
                   const count = qStats.byOption[String(i)] ?? 0;
                   const pct = qStats.total > 0 ? Math.round((count / qStats.total) * 100) : 0;
                   return (
-                    <div key={i} className="flex items-center gap-3">
-                      <span className={`w-8 h-8 rounded-lg flex-shrink-0 ${OPTION_COLORS[i % OPTION_COLORS.length].bg}`} />
+                    <div key={i} className="flex items-center gap-4">
+                      <span className={`w-10 h-10 rounded-xl flex-shrink-0 ${OPTION_COLORS[i % OPTION_COLORS.length].bg}`} />
                       <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-white/80">{opt}</span>
-                          <span className="text-sm font-bold">{count} ({pct}%)</span>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-base font-semibold text-white">{opt}</span>
+                          <span className="text-base font-black text-gold">{count} <span className="text-white/60 font-normal text-sm">({pct}%)</span></span>
                         </div>
-                        <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-5 bg-white/10 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-700 ${OPTION_COLORS[i % OPTION_COLORS.length].bg}`}
                             style={{ width: `${pct}%` }}
@@ -353,23 +371,23 @@ export default function KahootHost() {
               </div>
             )}
 
-            <div className="flex items-center justify-between bg-white/10 rounded-xl p-4 mb-6">
-              <div className="flex items-center gap-2 text-teal">
-                <BarChart2 className="w-5 h-5" />
-                <span className="font-semibold">{qStats.total} respostas recebidas</span>
+            {/* Rodapé com total e botão */}
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-3 flex-shrink-0">
+                <BarChart2 className="w-5 h-5 text-teal" />
+                <span className="font-semibold text-sm">{qStats.total} respostas</span>
               </div>
+              <button
+                onClick={handleNextQuestion}
+                className="flex-1 bg-teal hover:bg-teal-dark text-white font-bold py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-lg"
+              >
+                {currentQIndex + 1 >= totalQuestions ? (
+                  <><Trophy className="w-5 h-5" /> Terminar Sessão</>
+                ) : (
+                  <><ArrowRight className="w-5 h-5" /> Próxima Questão ({currentQIndex + 2}/{totalQuestions})</>
+                )}
+              </button>
             </div>
-
-            <button
-              onClick={handleNextQuestion}
-              className="w-full bg-teal hover:bg-teal-dark text-white font-bold py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-lg"
-            >
-              {currentQIndex + 1 >= totalQuestions ? (
-                <><Trophy className="w-5 h-5" /> Terminar Sessão</>
-              ) : (
-                <><ArrowRight className="w-5 h-5" /> Próxima Questão ({currentQIndex + 2}/{totalQuestions})</>
-              )}
-            </button>
           </div>
         )}
 
