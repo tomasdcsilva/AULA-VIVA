@@ -317,8 +317,14 @@ export default function KahootHost() {
               </div>
             )}
 
-            {/* Gráfico de barras — sem destaque de correto/incorreto */}
-            {(activeQuestion.type === "scale" || activeQuestion.options) && activeQuestion.type !== "open" && (
+            {/* Gráfico de barras — só mostra se não estiver marcado como "apenas no relatório" */}
+            {(activeQuestion.type === "scale" || activeQuestion.options) && activeQuestion.type !== "open" &&
+              !(() => {
+                const hiddenIds: number[] = quiz?.hiddenResultsQuestionIds
+                  ? JSON.parse((quiz as any).hiddenResultsQuestionIds)
+                  : [];
+                return activeQId ? hiddenIds.includes(activeQId) : false;
+              })() && (
               <div className="space-y-3 mb-6">
                 {(activeQuestion.type === "scale"
                   ? SCALE_OPTIONS
