@@ -250,30 +250,44 @@ export default function SessionManager() {
             </button>
           ))}
         </div>
-        {activeQuestionId && stats && stats.length > 0 ? (
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(88% 0.02 85)" />
-                <XAxis dataKey="answer" tick={{ fontSize: 11, fill: "oklch(50% 0.025 240)" }} />
-                <YAxis tick={{ fontSize: 11, fill: "oklch(50% 0.025 240)" }} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "0.75rem", border: "1px solid oklch(88% 0.02 85)" }}
-                  formatter={(v: number, _: string, entry: any) => [`${v} resp. (${entry.payload.percentage}%)`, "Respostas"]}
-                />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {stats.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            {activeQuestionId ? "Sem respostas ainda." : "Seleciona uma pergunta para ver as estatísticas."}
-          </p>
-        )}
+        {(() => {
+          const hiddenIds: number[] = quiz?.hiddenResultsQuestionIds
+            ? JSON.parse((quiz as any).hiddenResultsQuestionIds)
+            : [];
+          const isHidden = activeQuestionId ? hiddenIds.includes(activeQuestionId) : false;
+          if (isHidden) {
+            return (
+              <div className="flex items-center gap-3 py-6 px-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <span className="text-2xl">📋</span>
+                <p className="text-amber-800 text-sm font-semibold">Resultados apenas no relatório — não são mostrados durante a sessão.</p>
+              </div>
+            );
+          }
+          return activeQuestionId && stats && stats.length > 0 ? (
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="oklch(88% 0.02 85)" />
+                  <XAxis dataKey="answer" tick={{ fontSize: 11, fill: "oklch(50% 0.025 240)" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "oklch(50% 0.025 240)" }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "0.75rem", border: "1px solid oklch(88% 0.02 85)" }}
+                    formatter={(v: number, _: string, entry: any) => [`${v} resp. (${entry.payload.percentage}%)`, "Respostas"]}
+                  />
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                    {stats.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              {activeQuestionId ? "Sem respostas ainda." : "Seleciona uma pergunta para ver as estatísticas."}
+            </p>
+          );
+        })()}
       </div>
 
       {/* Chat */}
