@@ -1,0 +1,1 @@
+ALTER TABLE `questions` MODIFY COLUMN `educationLevel` enum('3rd_cycle','secondary','all') NOT NULL DEFAULT 'all';

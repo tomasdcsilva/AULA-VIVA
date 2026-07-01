@@ -113,7 +113,6 @@ const TYPE_LABELS: Record<string, string> = {
 
 const EDUCATION_LEVELS: Record<string, string> = {
   all: "Todos os níveis",
-  "2nd_cycle": "2.º Ciclo (5.º-6.º ano)",
   "3rd_cycle": "3.º Ciclo (7.º-9.º ano)",
   secondary: "Ensino Secundário (10.º-12.º ano)",
 };

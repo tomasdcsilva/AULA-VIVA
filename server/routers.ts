@@ -258,7 +258,7 @@ export const appRouter = router({
           id: z.number(),
           text: z.string().min(1).optional(),
           correctOption: z.number().nullable().optional(),
-          educationLevel: z.enum(["2nd_cycle", "3rd_cycle", "secondary", "all"]).optional(),
+          educationLevel: z.enum(["3rd_cycle", "secondary", "all"]).optional(),
           sensitivityLevel: z.enum(["low", "medium", "high"]).optional(),
           category: z.string().optional(),
         })
@@ -288,7 +288,7 @@ export const appRouter = router({
             "emotional_dependency",
           ]),
           sensitivityLevel: z.enum(["low", "medium", "high"]).default("low"),
-          educationLevel: z.enum(["2nd_cycle", "3rd_cycle", "secondary", "all"]).default("all"),
+          educationLevel: z.enum(["3rd_cycle", "secondary", "all"]).default("all"),
           options: z.array(z.string()).optional(),
           correctOption: z.number().nullable().optional(),
           discipline: z.string().optional(),
@@ -322,7 +322,7 @@ export const appRouter = router({
           options: z.array(z.string()).optional(),
           category: z.string().optional(),
           sensitivityLevel: z.enum(["low", "medium", "high"]).optional(),
-          educationLevel: z.enum(["2nd_cycle", "3rd_cycle", "secondary", "all"]).optional(),
+          educationLevel: z.enum(["3rd_cycle", "secondary", "all"]).optional(),
           discipline: z.string().optional(),
           literaryWork: z.string().optional(),
         })

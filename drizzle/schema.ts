@@ -57,7 +57,7 @@ export const questions = mysqlTable("questions", {
   discipline: varchar("discipline", { length: 128 }),
   yearGroup: varchar("yearGroup", { length: 32 }),
   literaryWork: varchar("literaryWork", { length: 256 }),
-  educationLevel: mysqlEnum("educationLevel", ["2nd_cycle", "3rd_cycle", "secondary", "all"]).default("all").notNull(),
+  educationLevel: mysqlEnum("educationLevel", ["3rd_cycle", "secondary", "all"]).default("all").notNull(),
   isValidated: boolean("isValidated").default(false).notNull(),
   isApproved: boolean("isApproved").default(false).notNull(),
   isSystemSuggestion: boolean("isSystemSuggestion").default(false).notNull(), // sugestão pré-definida do sistema

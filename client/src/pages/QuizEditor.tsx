@@ -30,7 +30,7 @@ const EMPTY_NEW_Q = {
   type: "multiple_choice" as "multiple_choice" | "scale" | "open",
   category: "stereotypes" as string,
   sensitivityLevel: "low" as "low" | "medium" | "high",
-  educationLevel: "all" as "2nd_cycle" | "3rd_cycle" | "secondary" | "all",
+  educationLevel: "all" as "3rd_cycle" | "secondary" | "all",
   options: ["", "", "", ""],
 };
 
@@ -362,7 +362,6 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
                 </select>
                 <select className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" value={newQ.educationLevel} onChange={(e) => setNewQ(q => ({ ...q, educationLevel: e.target.value as any }))}>
                   <option value="all">Todos os níveis</option>
-                  <option value="2nd_cycle">2.º Ciclo</option>
                   <option value="3rd_cycle">3.º Ciclo</option>
                   <option value="secondary">Secundário</option>
                 </select>
@@ -411,7 +410,6 @@ export default function QuizEditor({ id: propId }: QuizEditorProps = {}) {
             </select>
             <select className="border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-teal" value={educationLevelFilter} onChange={(e) => setEducationLevelFilter(e.target.value)}>
               <option value="">Todos os níveis</option>
-              <option value="2nd_cycle">2.º Ciclo</option>
               <option value="3rd_cycle">3.º Ciclo</option>
               <option value="secondary">Secundário</option>
             </select>
