@@ -225,3 +225,8 @@
 ## Cartões Coloridos nas Opções (Jul 2026)
 
 - [x] Opções de múltipla escolha no ecrã do aluno redesenhadas como cartões coloridos (estilo Kahoot) com símbolo e texto visível em grelha 2x2
+
+## Correções de UI (Jul 2026 — sessão 2)
+
+- [x] KahootPlayer: cartões coloridos mostram agora o texto das opções (múltipla escolha)
+- [x] ProjectionView: gráfico limpa imediatamente ao mudar de pergunta (sem mostrar dados da pergunta anterior)

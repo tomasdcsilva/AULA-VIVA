@@ -238,17 +238,21 @@ export default function KahootPlayer() {
               })}
             </div>
           ) : (
-            /* Perguntas de escolha múltipla — blocos de cor */
+            /* Perguntas de escolha múltipla — cartões coloridos com texto */
             <div className="grid grid-cols-2 gap-3">
-              {(activeQuestion?.options ?? ["A", "B", "C", "D"]).map((_opt, i) => {
+              {(activeQuestion?.options ?? ["A", "B", "C", "D"]).map((opt, i) => {
                 const color = OPTION_COLORS[i % OPTION_COLORS.length];
+                const SHAPES = ["▲", "◆", "●", "■"];
                 return (
                   <button
                     key={i}
                     onClick={() => handleAnswer(i)}
-                    className={`${color.bg} rounded-2xl transition-all active:scale-95 shadow-lg h-24 w-full`}
-                    aria-label={`Opção ${i + 1}`}
-                  />
+                    className={`${color.bg} rounded-2xl transition-all active:scale-95 shadow-lg min-h-[90px] w-full flex flex-col items-center justify-center gap-2 px-3 py-4 text-white font-bold text-sm text-center`}
+                    aria-label={opt}
+                  >
+                    <span className="text-xl opacity-80">{SHAPES[i % SHAPES.length]}</span>
+                    <span className="leading-snug">{opt}</span>
+                  </button>
                 );
               })}
             </div>

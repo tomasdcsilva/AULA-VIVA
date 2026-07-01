@@ -45,10 +45,24 @@ export default function ProjectionView() {
     { enabled: !!quiz }
   );
 
+  const [displayedQuestionId, setDisplayedQuestionId] = useState<number | null>(null);
+
   const { data: stats, refetch: refetchStats } = trpc.votes.stats.useQuery(
     { sessionId, questionId: activeQuestionId ?? 0 },
     { enabled: !!activeQuestionId, refetchInterval: 2000 }
   );
+
+  // Limpar os stats exibidos imediatamente ao mudar de pergunta
+  useEffect(() => {
+    setDisplayedQuestionId(null);
+  }, [activeQuestionId]);
+
+  // Marcar os stats como válidos para a pergunta atual quando chegam
+  useEffect(() => {
+    if (stats && activeQuestionId) {
+      setDisplayedQuestionId(activeQuestionId);
+    }
+  }, [stats, activeQuestionId]);
 
   // Cronómetro geral da sessão
   useEffect(() => {
@@ -107,7 +121,7 @@ export default function ProjectionView() {
     : [];
   const activeIsHidden = activeQuestionId ? hiddenResultsIds.includes(activeQuestionId) : false;
 
-  const chartData = (!activeIsHidden && stats?.map((s) => ({
+  const chartData = (!activeIsHidden && displayedQuestionId === activeQuestionId && stats?.map((s) => ({
     name: s.answer.length > 30 ? s.answer.slice(0, 30) + "…" : s.answer,
     fullName: s.answer,
     value: s.percentage,
