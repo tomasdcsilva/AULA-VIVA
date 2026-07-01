@@ -974,6 +974,59 @@ export const appRouter = router({
         if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
         return getActiveTeachers();
       }),
+
+    // ── Exportação completa de dados (backup manual) ──────────────────────
+    exportAll: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await import("./db").then((m) => m.getDb());
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Base de dados indisponível" });
+        const {
+          users: usersTable,
+          questions: questionsTable,
+          quizzes: quizzesTable,
+          sessions: sessionsTable,
+          sessionResponses: responsesTable,
+          chatMessages: chatTable,
+        } = await import("../drizzle/schema");
+        const { desc: descFn } = await import("drizzle-orm");
+
+        const [allUsers, allQuestions, allQuizzes, allSessions, allResponses, allChat] = await Promise.all([
+          db.select({
+            id: usersTable.id,
+            name: usersTable.name,
+            email: usersTable.email,
+            school: usersTable.school,
+            role: usersTable.role,
+            loginMethod: usersTable.loginMethod,
+            createdAt: usersTable.createdAt,
+            lastSignedIn: usersTable.lastSignedIn,
+          }).from(usersTable).orderBy(descFn(usersTable.createdAt)),
+          db.select().from(questionsTable).orderBy(descFn(questionsTable.createdAt)),
+          db.select().from(quizzesTable).orderBy(descFn(quizzesTable.createdAt)),
+          db.select().from(sessionsTable).orderBy(descFn(sessionsTable.createdAt)),
+          db.select().from(responsesTable).orderBy(descFn(responsesTable.createdAt)),
+          db.select().from(chatTable).orderBy(descFn(chatTable.createdAt)),
+        ]);
+
+        return {
+          exportedAt: new Date().toISOString(),
+          counts: {
+            users: allUsers.length,
+            questions: allQuestions.length,
+            quizzes: allQuizzes.length,
+            sessions: allSessions.length,
+            responses: allResponses.length,
+            chatMessages: allChat.length,
+          },
+          users: allUsers,
+          questions: allQuestions,
+          quizzes: allQuizzes,
+          sessions: allSessions,
+          responses: allResponses,
+          chatMessages: allChat,
+        };
+      }),
   }),
 });
 

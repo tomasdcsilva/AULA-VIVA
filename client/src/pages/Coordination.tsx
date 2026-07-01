@@ -13,6 +13,7 @@ import {
   Tag,
   Mail,
   UserCheck,
+  Download,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
@@ -95,9 +96,18 @@ export default function Coordination() {
 
   return (
     <div className="av-section animate-fade-in">
-      <div className="mb-6">
-        <h1 className="av-section-title">Painel de Coordenação</h1>
-        <p className="av-section-subtitle">Indicadores agregados por escola, turma e disciplina — sem identificação individual.</p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="av-section-title">Painel de Coordenação</h1>
+          <p className="av-section-subtitle">Indicadores agregados por escola, turma e disciplina — sem identificação individual.</p>
+        </div>
+        <Link
+          href="/coordination/export"
+          className="inline-flex items-center gap-2 text-sm font-medium text-teal border border-teal/30 rounded-lg px-4 py-2 hover:bg-teal-light transition-colors whitespace-nowrap flex-shrink-0"
+        >
+          <Download className="w-4 h-4" />
+          Exportar / Backup
+        </Link>
       </div>
 
       <PedagogicBox title="Sobre o Painel de Coordenação">

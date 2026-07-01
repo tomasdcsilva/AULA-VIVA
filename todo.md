@@ -211,3 +211,9 @@
 ## Correções Técnicas (Jul 2026)
 
 - [x] Corrigir bug nas estatísticas do PDF: perguntas de escolha múltipla comparavam texto com índices numéricos (sempre 0%). Agora converte índices → texto das opções. Perguntas de escala também corrigidas. Perguntas abertas mostram respostas únicas.
+
+## Exportação de Dados / Backup Manual (Jul 2026)
+
+- [x] Endpoint backend: exportar todos os dados (utilizadores, quizzes, sessões, respostas, chat) em JSON
+- [x] Página /coordination/export com botões de download por tabela e exportação completa
+- [x] Registar rota em App.tsx e adicionar link no painel de coordenação
