@@ -310,7 +310,7 @@ export default function KahootHost() {
               onClick={handleCloseQuestion}
               className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
             >
-              <StopCircle className="w-4 h-4" /> Encerrar Pergunta
+              <ArrowRight className="w-4 h-4" /> {currentQIndex + 1 >= totalQuestions ? "Terminar Sessão" : `Próxima Pergunta (${currentQIndex + 2}/${totalQuestions})`}
             </button>
           </div>
         )}
