@@ -504,6 +504,25 @@ export const appRouter = router({
             const visibleMessages = messages.filter((m) => !m.isHidden);
             const sensitiveCount = messages.filter((m) => m.isSensitive).length;
             const highlightedMessages = messages.filter((m) => m.isHighlighted).map((m) => m.content);
+            // Agrupar mensagens por ronda de debate
+            const roundsMap: Record<number, { prompt: string | null; messages: typeof visibleMessages }> = {};
+            for (const m of visibleMessages) {
+              const r = (m as any).chatRoundId ?? 1;
+              if (!roundsMap[r]) roundsMap[r] = { prompt: (m as any).chatRoundPrompt ?? null, messages: [] };
+              roundsMap[r].messages.push(m);
+            }
+            const chatRounds = Object.entries(roundsMap)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([roundId, { prompt, messages: roundMsgs }]) => ({
+                roundId: Number(roundId),
+                prompt,
+                messages: roundMsgs.map((m) => ({
+                  content: m.content,
+                  isSensitive: m.isSensitive,
+                  isHighlighted: m.isHighlighted,
+                  createdAt: m.createdAt,
+                })),
+              }));
             return {
               sessionId: s.id,
               code: s.code,
@@ -524,6 +543,7 @@ export const appRouter = router({
                   isHighlighted: m.isHighlighted,
                   createdAt: m.createdAt,
                 })),
+                chatRounds, // novo: mensagens agrupadas por ronda
               },
               questionStats: await Promise.all(
                 sessionQs.map(async (q) => ({
@@ -624,6 +644,7 @@ export const appRouter = router({
       }),
 
     // Professor define o prompt de debate (pergunta orientadora para o chat)
+    // Cada nova pergunta incrementa chatCurrentRound — as mensagens ficam associadas à ronda em que foram enviadas
     setChatPrompt: protectedProcedure
       .input(
         z.object({
@@ -635,8 +656,10 @@ export const appRouter = router({
         const s = await getSessionById(input.id);
         if (!s) throw new TRPCError({ code: "NOT_FOUND" });
         if (s.teacherId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
-        await updateSession(input.id, { chatPrompt: input.chatPrompt } as any);
-        return { success: true };
+        // Incrementar ronda de debate ao mudar a pergunta
+        const newRound = ((s as any).chatCurrentRound ?? 0) + 1;
+        await updateSession(input.id, { chatPrompt: input.chatPrompt, chatCurrentRound: newRound } as any);
+        return { success: true, chatCurrentRound: newRound };
       }),
 
     // Acesso público por código (alunos)
@@ -782,6 +805,9 @@ export const appRouter = router({
           anonToken: input.anonToken,
           content: input.content,
           isSensitive,
+          // Guardar a ronda e a pergunta ativa no momento do envio
+          chatRoundId: (s as any).chatCurrentRound ?? 1,
+          chatRoundPrompt: s.chatPrompt ?? null,
         });
         return { id, isSensitive };
       }),

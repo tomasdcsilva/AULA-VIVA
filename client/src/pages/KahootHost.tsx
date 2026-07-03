@@ -550,23 +550,22 @@ export default function KahootHost() {
                 )}
               </div>
 
-              {/* Mensagens ao vivo */}
+              {/* Mensagens ao vivo agrupadas por ronda */}
               {kahootState?.chatEnabled && (
                 <div className="mt-4">
-                  {/* Pergunta orientadora ativa */}
+                  {/* Pergunta orientadora ativa (ronda atual) */}
                   {kahootState.chatPrompt && (
                     <div className="bg-gold/20 border border-gold/40 rounded-xl px-3 py-2.5 mb-3 flex items-start gap-2">
                       <BookOpen className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-[10px] font-bold text-gold uppercase tracking-wide mb-0.5">Pergunta de debate enviada aos alunos</p>
+                        <p className="text-[10px] font-bold text-gold uppercase tracking-wide mb-0.5">
+                          Ronda {kahootState.chatCurrentRound ?? 1} — Pergunta ativa
+                        </p>
                         <p className="text-sm text-white/90 leading-snug">{kahootState.chatPrompt}</p>
                       </div>
                     </div>
                   )}
-                  <p className="text-xs font-semibold text-white/60 uppercase tracking-wide mb-2">
-                    Respostas dos alunos ao debate ({liveChatMessages?.length ?? 0}):
-                  </p>
-                  <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                  <div className="max-h-72 overflow-y-auto space-y-4 pr-1">
                     {loadingChat ? (
                       <p className="text-white/40 text-sm text-center py-4">A carregar mensagens...</p>
                     ) : chatError ? (
@@ -576,57 +575,83 @@ export default function KahootHost() {
                         Nenhuma mensagem ainda. Os alunos podem escrever agora.
                       </p>
                     ) : (
-                      [...liveChatMessages].reverse().map((msg) => (
-                        <div
-                          key={msg.id}
-                          className={`rounded-xl px-3 py-2.5 flex items-start gap-2.5 ${
-                            msg.isSensitive
-                              ? "bg-red-900/60 border border-red-500/50"
-                              : msg.isHighlighted
-                                ? "bg-gold/20 border border-gold/40"
-                                : msg.isHidden
-                                  ? "bg-white/5 opacity-40"
-                                  : "bg-white/10"
-                          }`}
-                        >
-                          <div className="flex-1 min-w-0">
-                            {msg.isSensitive && (
-                              <span className="text-xs font-bold text-red-400 block mb-0.5">⚠️ Sensível</span>
-                            )}
-                            <p className="text-sm text-white leading-snug break-words">{msg.content}</p>
-                            <p className="text-xs text-white/40 mt-0.5">
-                              {new Date(msg.createdAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                            </p>
-                          </div>
-                          <div className="flex gap-1 flex-shrink-0">
-                            <button
-                              onClick={() => moderateMsg.mutate({ messageId: msg.id, action: "highlight", sessionId })}
-                              disabled={moderateMsg.isPending}
-                              title="Destacar"
-                              className="p-1.5 text-amber-400 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40"
-                            >
-                              <Star className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => moderateMsg.mutate({ messageId: msg.id, action: "flag_sensitive", sessionId })}
-                              disabled={moderateMsg.isPending}
-                              title="Sinalizar sensível"
-                              className="p-1.5 text-red-400 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40"
-                            >
-                              <Flag className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => moderateMsg.mutate({ messageId: msg.id, action: "hide", sessionId })}
-                              disabled={moderateMsg.isPending}
-                              title="Ocultar"
-                              className="p-1.5 text-white/40 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40"
-                            >
-                              {msg.isHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
+                      // Agrupar mensagens por ronda
+                      (() => {
+                        const rounds: Record<number, { prompt: string | null; msgs: typeof liveChatMessages }> = {};
+                        for (const msg of liveChatMessages) {
+                          const r = msg.chatRoundId ?? 1;
+                          if (!rounds[r]) rounds[r] = { prompt: msg.chatRoundPrompt ?? null, msgs: [] };
+                          rounds[r].msgs.push(msg);
+                        }
+                        return Object.entries(rounds)
+                          .sort(([a], [b]) => Number(b) - Number(a)) // mais recente primeiro
+                          .map(([roundId, { prompt, msgs }]) => (
+                            <div key={roundId}>
+                              {/* Cabeçalho da ronda */}
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Ronda {roundId}</span>
+                                <div className="flex-1 h-px bg-white/10" />
+                                <span className="text-[10px] text-white/40">{msgs.length} respostas</span>
+                              </div>
+                              {prompt && (
+                                <p className="text-xs text-gold/80 italic mb-1.5 pl-1">“{prompt}”</p>
+                              )}
+                              <div className="space-y-1.5">
+                                {[...msgs].reverse().map((msg) => (
+                                  <div
+                                    key={msg.id}
+                                    className={`rounded-xl px-3 py-2.5 flex items-start gap-2.5 ${
+                                      msg.isSensitive
+                                        ? "bg-red-900/60 border border-red-500/50"
+                                        : msg.isHighlighted
+                                          ? "bg-gold/20 border border-gold/40"
+                                          : msg.isHidden
+                                            ? "bg-white/5 opacity-40"
+                                            : "bg-white/10"
+                                    }`}
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      {msg.isSensitive && (
+                                        <span className="text-xs font-bold text-red-400 block mb-0.5">⚠️ Sensível</span>
+                                      )}
+                                      <p className="text-sm text-white leading-snug break-words">{msg.content}</p>
+                                      <p className="text-xs text-white/40 mt-0.5">
+                                        {new Date(msg.createdAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                      </p>
+                                    </div>
+                                    <div className="flex gap-1 flex-shrink-0">
+                                      <button
+                                        onClick={() => moderateMsg.mutate({ messageId: msg.id, action: "highlight", sessionId })}
+                                        disabled={moderateMsg.isPending}
+                                        title="Destacar"
+                                        className="p-1.5 text-amber-400 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40"
+                                      >
+                                        <Star className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => moderateMsg.mutate({ messageId: msg.id, action: "flag_sensitive", sessionId })}
+                                        disabled={moderateMsg.isPending}
+                                        title="Sinalizar sensível"
+                                        className="p-1.5 text-red-400 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40"
+                                      >
+                                        <Flag className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => moderateMsg.mutate({ messageId: msg.id, action: "hide", sessionId })}
+                                        disabled={moderateMsg.isPending}
+                                        title="Ocultar"
+                                        className="p-1.5 text-white/40 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40"
+                                      >
+                                        {msg.isHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))
+                        })()
+                      )}
                   </div>
                 </div>
               )}

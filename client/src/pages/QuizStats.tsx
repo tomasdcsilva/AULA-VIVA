@@ -665,25 +665,18 @@ export default function QuizStats() {
                   </div>
                 )}
 
-                {/* Secção 4: Debate da Turma */}
+                {/* Secção 4: Debate da Turma — agrupado por rondas */}
                 {(session as any).chatSummary?.totalMessages > 0 && (
                   <div className="av-card border border-gold/30 bg-gold-light/20">
                     <h3 className="font-display font-bold text-navy mb-1 flex items-center gap-2">
                       <MessageCircle className="w-4 h-4 text-amber-600" /> Debate da Turma
                     </h3>
-                    {/* Pergunta orientadora */}
-                    {(session as any).chatPrompt && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-3 flex items-start gap-2">
-                        <BookOpen className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-0.5">Pergunta orientadora enviada pelo professor</p>
-                          <p className="text-sm text-navy font-medium leading-snug">{(session as any).chatPrompt}</p>
-                        </div>
-                      </div>
-                    )}
                     {/* Estatísticas rápidas */}
-                    <div className="flex gap-4 mb-3 text-xs text-muted-foreground">
+                    <div className="flex gap-4 mb-4 text-xs text-muted-foreground">
                       <span><strong className="text-navy">{(session as any).chatSummary.totalMessages}</strong> mensagens</span>
+                      {(session as any).chatSummary.chatRounds?.length > 0 && (
+                        <span><strong className="text-navy">{(session as any).chatSummary.chatRounds.length}</strong> ronda(s) de debate</span>
+                      )}
                       {(session as any).chatSummary.sensitiveCount > 0 && (
                         <span className="text-red-600"><strong>{(session as any).chatSummary.sensitiveCount}</strong> sinalizadas</span>
                       )}
@@ -691,27 +684,71 @@ export default function QuizStats() {
                         <span className="text-amber-600"><strong>{(session as any).chatSummary.highlightedMessages.length}</strong> destacadas</span>
                       )}
                     </div>
-                    {/* Todas as mensagens visíveis */}
-                    <div className="space-y-1.5">
-                      {(session as any).chatSummary.allMessages?.map((msg: { content: string; isSensitive: boolean; isHighlighted: boolean; createdAt: number }, i: number) => (
-                        <div
-                          key={i}
-                          className={`text-sm rounded-lg px-3 py-2 border ${
-                            msg.isSensitive
-                              ? "bg-red-50 border-red-200 text-red-800"
-                              : msg.isHighlighted
-                                ? "bg-amber-50 border-amber-200 text-navy font-medium italic"
-                                : "bg-white border-gray-100 text-navy"
-                          }`}
-                        >
-                          <span className="mr-2">{msg.isHighlighted ? "⭐" : msg.isSensitive ? "⚠️" : "●"}</span>
-                          {msg.content}
-                          <span className="ml-2 text-[10px] text-muted-foreground">
-                            {new Date(msg.createdAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                    {/* Rondas de debate */}
+                    {(session as any).chatSummary.chatRounds?.length > 0 ? (
+                      <div className="space-y-5">
+                        {(session as any).chatSummary.chatRounds.map((round: { roundId: number; prompt: string | null; messages: { content: string; isSensitive: boolean; isHighlighted: boolean; createdAt: number }[] }) => (
+                          <div key={round.roundId}>
+                            {/* Cabeçalho da ronda */}
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex-shrink-0">{round.roundId}</span>
+                              <div className="flex-1 h-px bg-amber-200/60" />
+                              <span className="text-[10px] text-muted-foreground">{round.messages.length} resposta(s)</span>
+                            </div>
+                            {/* Pergunta orientadora da ronda */}
+                            {round.prompt && (
+                              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-2 flex items-start gap-2">
+                                <BookOpen className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-amber-800 font-medium leading-snug italic">“{round.prompt}”</p>
+                              </div>
+                            )}
+                            {/* Mensagens desta ronda */}
+                            <div className="space-y-1.5 pl-1">
+                              {round.messages.map((msg, i) => (
+                                <div
+                                  key={i}
+                                  className={`text-sm rounded-lg px-3 py-2 border ${
+                                    msg.isSensitive
+                                      ? "bg-red-50 border-red-200 text-red-800"
+                                      : msg.isHighlighted
+                                        ? "bg-amber-50 border-amber-200 text-navy font-medium"
+                                        : "bg-white border-gray-100 text-navy"
+                                  }`}
+                                >
+                                  <span className="mr-2">{msg.isHighlighted ? "⭐" : msg.isSensitive ? "⚠️" : "●"}</span>
+                                  {msg.content}
+                                  <span className="ml-2 text-[10px] text-muted-foreground">
+                                    {new Date(msg.createdAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      /* Fallback: mensagens sem rondas (dados antigos) */
+                      <div className="space-y-1.5">
+                        {(session as any).chatSummary.allMessages?.map((msg: { content: string; isSensitive: boolean; isHighlighted: boolean; createdAt: number }, i: number) => (
+                          <div
+                            key={i}
+                            className={`text-sm rounded-lg px-3 py-2 border ${
+                              msg.isSensitive
+                                ? "bg-red-50 border-red-200 text-red-800"
+                                : msg.isHighlighted
+                                  ? "bg-amber-50 border-amber-200 text-navy font-medium italic"
+                                  : "bg-white border-gray-100 text-navy"
+                            }`}
+                          >
+                            <span className="mr-2">{msg.isHighlighted ? "⭐" : msg.isSensitive ? "⚠️" : "●"}</span>
+                            {msg.content}
+                            <span className="ml-2 text-[10px] text-muted-foreground">
+                              {new Date(msg.createdAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 

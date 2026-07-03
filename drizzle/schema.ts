@@ -106,7 +106,8 @@ export const sessions = mysqlTable("sessions", {
     .notNull(),
   chatEnabled: boolean("chatEnabled").default(false).notNull(),
   chatPaused: boolean("chatPaused").default(false).notNull(),
-  chatPrompt: text("chatPrompt"), // pergunta de debate enviada pelo professor
+  chatPrompt: text("chatPrompt"), // pergunta de debate enviada pelo professor (ronda atual)
+  chatCurrentRound: int("chatCurrentRound").default(0).notNull(), // incrementa cada vez que o professor muda a pergunta
   participantCount: int("participantCount").default(0).notNull(),
   // Campos para modo Kahoot
   activeQuestionIndex: int("activeQuestionIndex").default(-1).notNull(),
@@ -147,6 +148,9 @@ export const chatMessages = mysqlTable("chat_messages", {
   isHidden: boolean("isHidden").default(false).notNull(),
   isSensitive: boolean("isSensitive").default(false).notNull(),
   isHighlighted: boolean("isHighlighted").default(false).notNull(),
+  // Ronda de debate: cada vez que o professor muda a pergunta, incrementa o número de ronda
+  chatRoundId: int("chatRoundId").default(1).notNull(),
+  chatRoundPrompt: text("chatRoundPrompt"), // pergunta orientadora ativa quando a mensagem foi enviada
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

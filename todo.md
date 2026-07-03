@@ -263,9 +263,18 @@
 
 ## Debate ligado às perguntas do quiz (Jul 2026)
 
-- [ ] KahootHost: substituir sugestões genéricas de debate pelas perguntas reais do quiz como opções orientadoras
+- [x] KahootHost: substituir sugestões genéricas de debate pelas perguntas reais do quiz como opções orientadoras
 
 ## Contexto do chat e relatório (Jul 2026)
 
 - [x] KahootHost: mostrar pergunta orientadora como cabeçalho acima das mensagens ao vivo
 - [x] Relatório de jogo: adicionar secção de chat com pergunta de debate e mensagens completas
+
+## Chat com múltiplas rondas de debate (Jul 2026)
+
+- [ ] Schema: adicionar campo chatRoundId (INT) e chatRoundPrompt (TEXT) à tabela chatMessages
+- [ ] Backend: ao enviar mensagem, guardar o chatRoundId ativo da sessão; ao mudar pergunta, incrementar chatRoundId
+- [ ] Backend: allMessages e report devolvem mensagens agrupadas por ronda (chatRoundId + chatRoundPrompt)
+- [ ] Frontend KahootHost: mostrar mensagens agrupadas por ronda de debate
+- [ ] Frontend QuizStats: mostrar rondas de debate separadas no relatório
+- [ ] Dados fictícios: criar sessão demo com 3 rondas de debate para demonstração

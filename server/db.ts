@@ -787,6 +787,7 @@ export async function getKahootState(sessionId: number) {
     chatEnabled: sess.chatEnabled,
     chatPaused: sess.chatPaused,
     chatPrompt: sess.chatPrompt ?? null,
+    chatCurrentRound: sess.chatCurrentRound ?? 0,
   };
 }
 
