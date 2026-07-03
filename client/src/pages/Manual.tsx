@@ -152,7 +152,7 @@ export default function Manual() {
             <div className="flex items-start gap-2"><span className="text-amber-500">⭐</span><p><strong>Destacar</strong> — marca a mensagem como relevante para o debate ou para o relatório.</p></div>
             <div className="flex items-start gap-2"><span className="text-red-600">🚩</span><p><strong>Sinalizar</strong> — marca como conteúdo sensível para acompanhamento posterior.</p></div>
           </div>
-          <Tip text="Quando um aluno escreve uma mensagem com palavras associadas a situações de risco (ex: 'ajuda', 'medo', 'violência'), a plataforma mostra automaticamente ao aluno um painel com canais de apoio (Linha 116 006, APAV, psicólogo escolar)." />
+          <Tip text="Quando um aluno escreve uma mensagem com palavras associadas a situações de risco (ex: 'ajuda', 'medo', 'violência'), a plataforma mostra automaticamente ao aluno um painel com canais de apoio: <strong>116 111</strong> (Linha de Apoio à Criança e Jovem, gratuita, 24h), <strong>1411</strong> (Linha Nacional de Prevenção do Suicídio, gratuita, 24h), APAV (apav.pt) e psicólogo escolar." />
         </Accordion>
 
         <Accordion title="6. Ler e exportar o relatório" icon={<FileText className="w-5 h-5" />}>

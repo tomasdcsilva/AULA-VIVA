@@ -122,7 +122,8 @@ export default function ChatPedagogico({
           <div className={`rounded-xl p-3 flex items-start gap-2.5 ${isDark ? "bg-blue-900/40 border border-blue-500/30" : "bg-blue-50 border border-blue-200"}`}>
             <Phone className={`w-4 h-4 flex-shrink-0 mt-0.5 ${isDark ? "text-blue-300" : "text-blue-600"}`} />
             <p className={`text-xs ${isDark ? "text-blue-200" : "text-blue-800"}`}>
-              <strong>Linha de Apoio à Vítima: 116 006</strong> — Gratuita, 24h, confidencial.
+              <strong>116 111 — Linha de Apoio à Criança e Jovem</strong> (gratuita, 24h) ·
+              <strong>1411 — Linha de Prevenção do Suicídio</strong> (gratuita, 24h) ·
               Também podes falar com o psicólogo(a) da escola em privado.
             </p>
           </div>
@@ -192,9 +193,10 @@ export default function ChatPedagogico({
                   A tua mensagem foi recebida. Se estiveres a passar por uma situação difícil, não estás sozinho/a.
                 </p>
                 <div className={`space-y-1.5 text-xs ${isDark ? "text-blue-200" : "text-blue-900"}`}>
-                  <p>📞 <strong>Linha de Apoio à Vítima: 116 006</strong> — Gratuita · 24h · Confidencial</p>
+                  <p>📞 <strong>116 111 — Linha de Apoio à Criança e Jovem</strong> — Gratuita · 24h · Anónima</p>
+                  <p>📞 <strong>1411 — Prevenção do Suicídio e Apoio Psicológico</strong> — Gratuita · 24h</p>
                   <p>💬 <strong>Psicólogo(a) da escola</strong> — Podes pedir para falar em privado</p>
-                  <p>🌐 <strong>APAV:</strong> apav.pt</p>
+                  <p>🌐 <strong>APAV:</strong> apav.pt · <strong>SOS Voz Amiga:</strong> 213 544 545</p>
                 </div>
                 <button
                   onClick={() => setShowSupport(false)}

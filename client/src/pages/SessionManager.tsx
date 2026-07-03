@@ -398,11 +398,25 @@ export default function SessionManager() {
       </div>
 
       {/* Chat */}
-      {(status === "chat_open" || status === "closed") && chatMessages && (
+      {chatMessages && (
         <div className="av-card mt-6">
-          <h2 className="font-display font-bold text-navy mb-2 flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-teal" /> Moderação do Chat
-          </h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-display font-bold text-navy flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-teal" /> Moderação do Chat
+            </h2>
+            <div className="flex items-center gap-2">
+              {chatMessages.length > 0 && (
+                <span className="text-xs bg-teal/10 text-teal-dark font-semibold px-2.5 py-1 rounded-full">
+                  {chatMessages.length} mensagem{chatMessages.length !== 1 ? "s" : ""}
+                </span>
+              )}
+              {status !== "chat_open" && status !== "closed" && (
+                <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full">
+                  Chat ainda não aberto
+                </span>
+              )}
+            </div>
+          </div>
           <PedagogicBox variant="sensitive" title="Protocolo para mensagens sensíveis">
             Mensagens com conteúdo sensível (pedidos de ajuda, referências a violência ou abuso) são
             sinalizadas automaticamente e destacadas a vermelho. Intervém discretamente, oferece apoio

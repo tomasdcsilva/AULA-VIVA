@@ -249,3 +249,10 @@
 - [x] SessionManager: painel de prompts de debate (lista de sugestões + campo livre) com botão para enviar
 - [x] KahootHost: ecrã final com botão "Abrir Debate" e painel de prompts
 - [x] PDF: incluir chatPrompt e resumo de mensagens do chat no relatório
+
+## Correções Chat (Jul 2026)
+
+- [x] SessionManager: painel de moderação do chat visível em todos os estados (não só chat_open/closed)
+- [x] SessionManager: contador de mensagens no cabeçalho do painel de moderação
+- [x] ChatPedagogico: substituir 116 006 pelas linhas corretas em Portugal (116 111, 1411, SOS Voz Amiga)
+- [x] Manual.tsx: atualizar referência às linhas de apoio corretas
