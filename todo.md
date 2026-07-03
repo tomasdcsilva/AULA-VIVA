@@ -272,9 +272,9 @@
 
 ## Chat com múltiplas rondas de debate (Jul 2026)
 
-- [ ] Schema: adicionar campo chatRoundId (INT) e chatRoundPrompt (TEXT) à tabela chatMessages
-- [ ] Backend: ao enviar mensagem, guardar o chatRoundId ativo da sessão; ao mudar pergunta, incrementar chatRoundId
-- [ ] Backend: allMessages e report devolvem mensagens agrupadas por ronda (chatRoundId + chatRoundPrompt)
-- [ ] Frontend KahootHost: mostrar mensagens agrupadas por ronda de debate
-- [ ] Frontend QuizStats: mostrar rondas de debate separadas no relatório
+- [x] Schema: adicionar campo chatRoundId (INT) e chatRoundPrompt (TEXT) à tabela chatMessages
+- [x] Backend: ao enviar mensagem, guardar o chatRoundId ativo da sessão; ao mudar pergunta, incrementar chatRoundId
+- [x] Backend: allMessages e report devolvem mensagens agrupadas por ronda (chatRoundId + chatRoundPrompt)
+- [x] Frontend KahootHost: mostrar mensagens agrupadas por ronda de debate
+- [x] Frontend QuizStats: mostrar rondas de debate separadas no relatório
 - [ ] Dados fictícios: criar sessão demo com 3 rondas de debate para demonstração

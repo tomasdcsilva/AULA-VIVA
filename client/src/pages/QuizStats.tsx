@@ -696,12 +696,14 @@ export default function QuizStats() {
                               <span className="text-[10px] text-muted-foreground">{round.messages.length} resposta(s)</span>
                             </div>
                             {/* Pergunta orientadora da ronda */}
-                            {round.prompt && (
-                              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-2 flex items-start gap-2">
-                                <BookOpen className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-2 flex items-start gap-2">
+                              <BookOpen className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                              {round.prompt ? (
                                 <p className="text-xs text-amber-800 font-medium leading-snug italic">“{round.prompt}”</p>
-                              </div>
-                            )}
+                              ) : (
+                                <p className="text-xs text-amber-700/60 italic">Debate livre — sem pergunta orientadora enviada</p>
+                              )}
+                            </div>
                             {/* Mensagens desta ronda */}
                             <div className="space-y-1.5 pl-1">
                               {round.messages.map((msg, i) => (
