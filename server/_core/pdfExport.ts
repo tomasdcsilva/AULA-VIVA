@@ -35,6 +35,8 @@ function buildReportHtml(data: {
   chatMessages: string[];
   sensitiveCount: number;
   suggestions: string[];
+  chatPrompt?: string | null;
+  totalChatMessages?: number;
 }): string {
   const COLORS = ["#0d9488", "#f59e0b", "#3b82f6", "#8b5cf6", "#ef4444", "#10b981"];
 
@@ -126,7 +128,9 @@ function buildReportHtml(data: {
     </div>
 
     <div class="section">
-      <div class="section-title">Resumo do Chat — Excertos Anonimizados</div>
+      <div class="section-title">Debate da Turma — Excertos Anonimizados</div>
+      ${data.chatPrompt ? `<div style="background:#fef9c3;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#92400e;"><strong>Pergunta orientadora enviada pelo professor:</strong> ${data.chatPrompt}</div>` : ""}
+      ${data.totalChatMessages !== undefined ? `<p style="font-size:12px;color:#6b7280;margin-bottom:10px;">Total de mensagens no debate: <strong>${data.totalChatMessages}</strong></p>` : ""}
       ${chatHtml}
     </div>
 
@@ -280,6 +284,8 @@ export function registerPdfExport(app: Express) {
         chatMessages: highlightedMessages,
         sensitiveCount,
         suggestions,
+        chatPrompt: session.chatPrompt ?? null,
+        totalChatMessages: chat.length,
       });
 
       // Gerar PDF com Puppeteer — executablePath dinâmico para dev e produção

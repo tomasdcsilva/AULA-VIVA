@@ -3,7 +3,8 @@ import PedagogicBox from "@/components/PedagogicBox";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft, Play, Square, MessageCircle, PauseCircle, PlayCircle,
-  Eye, EyeOff, Flag, Star, BarChart3, FileText, Copy, Users, Monitor, Sheet, QrCode
+  Eye, EyeOff, Flag, Star, BarChart3, FileText, Copy, Users, Monitor, Sheet, QrCode,
+  BookOpen, Send, Lightbulb
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useParams } from "wouter";
@@ -40,6 +41,8 @@ export default function SessionManager() {
   const [activeQuestionId, setActiveQuestionId] = useState<number | null>(null);
   const [reportVisible, setReportVisible] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [chatPromptInput, setChatPromptInput] = useState("");
+  const [promptSent, setPromptSent] = useState(false);
   const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/join` : "/join";
 
   const { data: session, refetch: refetchSession } = trpc.sessions.get.useQuery(
@@ -71,6 +74,15 @@ export default function SessionManager() {
 
   const moderate = trpc.chat.moderate.useMutation({
     onSuccess: () => refetchChat(),
+    onError: (e) => toast.error(e.message),
+  });
+
+  const setChatPrompt = trpc.sessions.setChatPrompt.useMutation({
+    onSuccess: () => {
+      toast.success("Prompt enviado para os alunos!");
+      setPromptSent(true);
+      refetchSession();
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -257,6 +269,73 @@ export default function SessionManager() {
           )}
         </div>
       </div>
+
+      {/* Painel de Prompts de Debate — visível quando chat está aberto ou prestes a abrir */}
+      {(status === "voting_closed" || status === "chat_open") && (
+        <div className="av-card mt-6">
+          <h2 className="font-display font-bold text-navy mb-2 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-teal" /> Pergunta Orientadora do Debate
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Envia uma pergunta de debate para os alunos verem no chat. Aparece em destaque no ecrã de cada aluno.
+          </p>
+
+          {/* Prompt atual */}
+          {session.chatPrompt && (
+            <div className="bg-gold-light border border-gold/50 rounded-xl p-3 mb-4 flex items-start gap-2">
+              <Lightbulb className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-amber-700 mb-0.5">Pergunta atual enviada aos alunos:</p>
+                <p className="text-sm text-navy font-medium">{session.chatPrompt}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Sugestões rápidas */}
+          <div className="mb-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sugestões rápidas:</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                "O que sentes quando vês alguém a ser excluído?",
+                "Já alguma vez sentiste pressão para fazer algo que não querias?",
+                "Como podes ajudar um colega que está a ser maltratado?",
+                "O que é para ti uma relação saudável?",
+                "Quando é que o ciúme se torna perigoso?",
+              ].map((sugestao) => (
+                <button
+                  key={sugestao}
+                  onClick={() => setChatPromptInput(sugestao)}
+                  className="text-xs bg-cream-dark text-navy px-3 py-1.5 rounded-lg hover:bg-teal-light hover:text-teal-dark transition-colors"
+                >
+                  {sugestao.slice(0, 45)}{sugestao.length > 45 ? "…" : ""}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Campo livre + botão enviar */}
+          <div className="flex gap-2">
+            <input
+              className="flex-1 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card"
+              placeholder="Escreve ou escolhe uma pergunta de debate..."
+              value={chatPromptInput}
+              onChange={(e) => { setChatPromptInput(e.target.value); setPromptSent(false); }}
+              maxLength={300}
+            />
+            <button
+              onClick={() => {
+                if (!chatPromptInput.trim()) return;
+                setChatPrompt.mutate({ id: sessionId, chatPrompt: chatPromptInput.trim() });
+              }}
+              disabled={!chatPromptInput.trim() || setChatPrompt.isPending}
+              className="av-btn-primary px-4 py-2.5 disabled:opacity-50 flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              {promptSent ? "Enviado!" : "Enviar"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Estatísticas por pergunta */}
       <div className="av-card mt-6">

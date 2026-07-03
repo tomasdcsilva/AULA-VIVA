@@ -106,6 +106,7 @@ export const sessions = mysqlTable("sessions", {
     .notNull(),
   chatEnabled: boolean("chatEnabled").default(false).notNull(),
   chatPaused: boolean("chatPaused").default(false).notNull(),
+  chatPrompt: text("chatPrompt"), // pergunta de debate enviada pelo professor
   participantCount: int("participantCount").default(0).notNull(),
   // Campos para modo Kahoot
   activeQuestionIndex: int("activeQuestionIndex").default(-1).notNull(),

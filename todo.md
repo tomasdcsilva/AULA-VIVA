@@ -236,3 +236,16 @@
 - [x] Chat anónimo funcional e visível no ecrã do aluno (StudentSession)
 - [x] Modo assíncrono: sessão aberta que os alunos fazem quando querem sem professor
 - [x] QR code gerado para cada código de sessão (no painel do professor e no ecrã de espera)
+
+## Chat Pedagógico Completo (Jul 2026)
+
+- [x] Schema: adicionar campo chatPrompt (TEXT) à tabela sessions
+- [x] Backend: endpoint sessions.setChatPrompt para professor definir prompt de debate
+- [x] Backend: sessions.status devolve também chatPrompt
+- [x] Backend: kahoot.state devolve chatEnabled, chatPaused, chatPrompt
+- [x] Componente ChatPedagogico reutilizável: regras visíveis, protocolo de apoio, prompt do professor, área de mensagens
+- [x] KahootPlayer: após jogo terminar, mostrar ecrã de espera de debate; quando chatEnabled=true, mostrar ChatPedagogico
+- [x] StudentSession: substituir chat básico pelo componente ChatPedagogico com regras e protocolo
+- [x] SessionManager: painel de prompts de debate (lista de sugestões + campo livre) com botão para enviar
+- [x] KahootHost: ecrã final com botão "Abrir Debate" e painel de prompts
+- [x] PDF: incluir chatPrompt e resumo de mensagens do chat no relatório

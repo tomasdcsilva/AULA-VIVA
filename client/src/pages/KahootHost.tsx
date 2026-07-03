@@ -11,6 +11,10 @@ import {
   StopCircle,
   BarChart2,
   ArrowRight,
+  MessageCircle,
+  Send,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
@@ -44,6 +48,8 @@ export default function KahootHost() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [duration, setDuration] = useState(20);
   const [showingResults, setShowingResults] = useState(false);
+  const [chatPromptInput, setChatPromptInput] = useState("");
+  const [promptSent, setPromptSent] = useState(false);
 
   const validId = !isNaN(sessionId) && sessionId > 0;
 
@@ -99,6 +105,14 @@ export default function KahootHost() {
     onError: (e) => toast.error(e.message),
   });
   const updateSession = trpc.sessions.updateStatus.useMutation();
+
+  const setChatPrompt = trpc.sessions.setChatPrompt.useMutation({
+    onSuccess: () => {
+      toast.success("Pergunta de debate enviada para os alunos!");
+      setPromptSent(true);
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   // Sincronizar fase com estado do servidor
   useEffect(() => {
@@ -402,14 +416,16 @@ export default function KahootHost() {
 
         {/* ── SESSÃO TERMINADA ── */}
         {phase === "leaderboard" && (
-          <div className="w-full max-w-lg text-center">
-            <div className="text-5xl mb-4">🎓</div>
-            <h2 className="text-3xl font-display font-black mb-2">Sessão Concluída!</h2>
-            <p className="text-white/60 mb-8">
-              Todas as questões foram respondidas. As opiniões da turma estão disponíveis no relatório.
-            </p>
+          <div className="w-full max-w-lg">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">🎓</div>
+              <h2 className="text-3xl font-display font-black mb-2">Sessão Concluída!</h2>
+              <p className="text-white/60">
+                Todas as questões foram respondidas. As opiniões da turma estão disponíveis no relatório.
+              </p>
+            </div>
 
-            <div className="bg-white/10 rounded-2xl p-6 mb-8 text-left space-y-3">
+            <div className="bg-white/10 rounded-2xl p-5 mb-5 space-y-3">
               <p className="text-white/80 text-sm font-semibold uppercase tracking-wide mb-2">Resumo da sessão</p>
               {leaderboard && (
                 <div className="flex items-center justify-between">
@@ -425,9 +441,86 @@ export default function KahootHost() {
               )}
             </div>
 
+            {/* Painel de Debate — controlo do chat pós-jogo */}
+            <div className="bg-white/10 rounded-2xl p-5 mb-5">
+              <h3 className="font-display font-bold text-white text-base mb-1 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-teal" /> Debate da Turma
+              </h3>
+              <p className="text-white/60 text-sm mb-4">
+                Ativa o chat para os alunos debaterem. Podes enviar uma pergunta orientadora antes de abrir.
+              </p>
+
+              {/* Prompt de debate */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-white/60 uppercase tracking-wide mb-2">Pergunta orientadora (opcional):</p>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {[
+                    "O que sentes quando vês alguém a ser excluído?",
+                    "Já alguma vez sentiste pressão para fazer algo que não querias?",
+                    "O que é para ti uma relação saudável?",
+                    "Quando é que o ciúmes se torna perigoso?",
+                  ].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => { setChatPromptInput(s); setPromptSent(false); }}
+                      className="text-xs bg-white/10 text-white/80 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      {s.slice(0, 40)}{s.length > 40 ? "…" : ""}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 bg-white/10 text-white placeholder-white/40 border border-white/20 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal"
+                    placeholder="Escreve ou escolhe uma pergunta..."
+                    value={chatPromptInput}
+                    onChange={(e) => { setChatPromptInput(e.target.value); setPromptSent(false); }}
+                    maxLength={300}
+                  />
+                  <button
+                    onClick={() => {
+                      if (!chatPromptInput.trim()) return;
+                      setChatPrompt.mutate({ id: sessionId, chatPrompt: chatPromptInput.trim() });
+                    }}
+                    disabled={!chatPromptInput.trim() || setChatPrompt.isPending}
+                    className="bg-gold text-navy font-bold px-4 py-2.5 rounded-xl hover:bg-gold/80 disabled:opacity-40 transition-all flex items-center gap-1.5"
+                  >
+                    <Send className="w-4 h-4" />
+                    {promptSent ? "✓" : "Enviar"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Botões de controlo do chat */}
+              <div className="flex flex-wrap gap-3">
+                {!kahootState?.chatEnabled ? (
+                  <button
+                    onClick={() => updateSession.mutate({ id: sessionId, status: "closed", chatEnabled: true })}
+                    className="bg-teal hover:bg-teal-dark text-white font-bold px-5 py-3 rounded-xl transition-all flex items-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" /> Abrir Debate
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => updateSession.mutate({ id: sessionId, status: "closed", chatPaused: !kahootState?.chatPaused })}
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-3 rounded-xl transition-all flex items-center gap-2"
+                  >
+                    {kahootState?.chatPaused ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
+                    {kahootState?.chatPaused ? "Retomar Chat" : "Pausar Chat"}
+                  </button>
+                )}
+                {kahootState?.chatEnabled && (
+                  <div className="flex items-center gap-2 text-teal text-sm font-semibold">
+                    <div className="w-2 h-2 bg-teal rounded-full animate-pulse" />
+                    Chat ativo
+                  </div>
+                )}
+              </div>
+            </div>
+
             <button
               onClick={() => navigate("/dashboard")}
-              className="bg-teal hover:bg-teal-dark text-white font-bold px-8 py-3 rounded-xl transition-all"
+              className="w-full bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3 rounded-xl transition-all"
             >
               Voltar ao Painel
             </button>

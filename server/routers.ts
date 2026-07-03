@@ -616,6 +616,22 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Professor define o prompt de debate (pergunta orientadora para o chat)
+    setChatPrompt: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          chatPrompt: z.string().max(500).nullable(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const s = await getSessionById(input.id);
+        if (!s) throw new TRPCError({ code: "NOT_FOUND" });
+        if (s.teacherId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+        await updateSession(input.id, { chatPrompt: input.chatPrompt } as any);
+        return { success: true };
+      }),
+
     // Acesso público por código (alunos)
     join: publicProcedure
       .input(z.object({ code: z.string() }))
@@ -658,7 +674,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const s = await getSessionById(input.sessionId);
         if (!s) throw new TRPCError({ code: "NOT_FOUND" });
-        return { status: s.status, chatEnabled: s.chatEnabled, chatPaused: s.chatPaused, isAsync: s.isAsync, asyncExpiresAt: s.asyncExpiresAt };
+        return { status: s.status, chatEnabled: s.chatEnabled, chatPaused: s.chatPaused, chatPrompt: s.chatPrompt ?? null, isAsync: s.isAsync, asyncExpiresAt: s.asyncExpiresAt };
       }),
 
     // Eliminar sessão e todos os dados associados

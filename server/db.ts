@@ -784,7 +784,9 @@ export async function getKahootState(sessionId: number) {
     timeRemaining: Math.round(timeRemaining),
     answersForActive,
     participantCount: sess.participantCount,
-
+    chatEnabled: sess.chatEnabled,
+    chatPaused: sess.chatPaused,
+    chatPrompt: sess.chatPrompt ?? null,
   };
 }
 

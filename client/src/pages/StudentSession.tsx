@@ -1,11 +1,12 @@
-import { Shield, MessageCircle, BarChart3, Send, CheckCircle, AlertTriangle, BookOpen } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { Shield, BarChart3, CheckCircle, BookOpen } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from "recharts";
+import ChatPedagogico from "@/components/ChatPedagogico";
 
 interface SessionData {
   sessionId: number;
@@ -44,10 +45,7 @@ export default function StudentSession() {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState<Record<number, boolean>>({});
-  const [chatMessage, setChatMessage] = useState("");
   const [showStats, setShowStats] = useState(false);
-  const [showSupportPanel, setShowSupportPanel] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("av_session");
@@ -64,11 +62,6 @@ export default function StudentSession() {
   const { data: statusData, refetch: refetchStatus } = trpc.sessions.status.useQuery(
     { sessionId },
     { refetchInterval: 4000, enabled: !!sessionData }
-  );
-
-  const { data: chatMessages, refetch: refetchChat } = trpc.chat.messages.useQuery(
-    { sessionId },
-    { refetchInterval: 3000, enabled: statusData?.chatEnabled ?? false }
   );
 
   const activeQ = sessionData?.questions[currentQ];
@@ -98,21 +91,6 @@ export default function StudentSession() {
     },
     onError: (e) => toast.error(e.message),
   });
-
-  const sendChat = trpc.chat.send.useMutation({
-    onSuccess: (r) => {
-      setChatMessage("");
-      refetchChat();
-      if (r.isSensitive) {
-        setShowSupportPanel(true);
-      }
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
 
   if (!sessionData) return (
     <div className="flex items-center justify-center min-h-screen bg-cream">
@@ -350,126 +328,21 @@ export default function StudentSession() {
           </div>
         )}
 
-        {/* Painel de Apoio — aparece quando mensagem sensível é detetada */}
-        {showSupportPanel && (
-          <div className="mt-6 animate-fade-in">
-            <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl p-5">
-              <div className="flex items-start gap-3">
-                <div className="text-2xl">💙</div>
-                <div className="flex-1">
-                  <h3 className="font-display font-bold text-blue-900 text-base mb-1">Estamos aqui para ajudar</h3>
-                  <p className="text-sm text-blue-800 mb-3">A tua mensagem foi recebida. Se estiveres a passar por uma situação difícil, não estás sozinho/a. Podes pedir ajuda de forma discreta.</p>
-                  <div className="space-y-2">
-                    <div className="bg-white rounded-xl px-4 py-2.5 flex items-center gap-3">
-                      <span className="text-lg">📞</span>
-                      <div>
-                        <p className="text-xs font-semibold text-blue-900">Linha de Apoio à Vítima</p>
-                        <p className="text-sm font-bold text-blue-700">116 006</p>
-                        <p className="text-xs text-muted-foreground">Gratuita · 24h · Confidencial</p>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-xl px-4 py-2.5 flex items-center gap-3">
-                      <span className="text-lg">💬</span>
-                      <div>
-                        <p className="text-xs font-semibold text-blue-900">Psicólogo/a da escola</p>
-                        <p className="text-xs text-muted-foreground">Podes pedir para falar em privado — é confidencial</p>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-xl px-4 py-2.5 flex items-center gap-3">
-                      <span className="text-lg">🌐</span>
-                      <div>
-                        <p className="text-xs font-semibold text-blue-900">APAV — Apoio à Vítima</p>
-                        <p className="text-xs text-blue-600">apav.pt</p>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowSupportPanel(false)}
-                    className="mt-3 text-xs text-blue-600 underline"
-                  >
-                    Fechar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Chat */}
+
+        {/* Chat Pedagógico */}
         {chatEnabled && (
           <div className="mt-6 animate-fade-in">
-            <div className="av-card">
-              <h2 className="font-display font-bold text-navy mb-2 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-teal" /> Debate da Turma
-              </h2>
-
-              {/* Regras do chat */}
-              <div className="bg-cream-dark rounded-xl p-3 mb-3 text-xs text-muted-foreground">
-                <p className="font-semibold text-navy mb-1">Regras do espaço de debate:</p>
-                <p>· Respeita todas as opiniões · Não uses linguagem ofensiva · Podes partilhar a tua perspetiva com segurança</p>
-              </div>
-
-              {/* Protocolo sensível */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3 text-xs text-amber-800 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>Se precisares de ajuda ou te sentires em risco, escreve "preciso de ajuda" — o professor será notificado de forma discreta.</p>
-              </div>
-
-              {/* Mensagens */}
-              <div className="space-y-2 max-h-64 overflow-y-auto mb-3 pr-1">
-                {!chatMessages || chatMessages.length === 0 ? (
-                  <p className="text-center text-muted-foreground text-sm py-4">Ainda não há mensagens. Sê o primeiro a partilhar!</p>
-                ) : (
-                  chatMessages.map((msg) => (
-                    <div key={msg.id} className="bg-cream-dark rounded-xl px-3 py-2">
-                      <p className="text-sm text-navy">{msg.content}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(msg.createdAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                    </div>
-                  ))
-                )}
-                <div ref={chatEndRef} />
-              </div>
-
-              {/* Input */}
-              {chatPaused ? (
-                <div className="text-center text-sm text-amber-700 bg-amber-50 rounded-xl py-3 px-4">
-                  ⏸ O chat está pausado pelo professor.
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <input
-                    className="flex-1 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-card"
-                    placeholder="Partilha a tua perspetiva..."
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        if (chatMessage.trim()) {
-                          sendChat.mutate({ sessionId, anonToken: sessionData.anonToken, content: chatMessage.trim() });
-                        }
-                      }
-                    }}
-                    maxLength={500}
-                  />
-                  <button
-                    onClick={() => {
-                      if (chatMessage.trim()) {
-                        sendChat.mutate({ sessionId, anonToken: sessionData.anonToken, content: chatMessage.trim() });
-                      }
-                    }}
-                    disabled={!chatMessage.trim() || sendChat.isPending}
-                    className="av-btn-primary px-4 py-2.5 disabled:opacity-50"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
+            <ChatPedagogico
+              sessionId={sessionId}
+              anonToken={sessionData.anonToken}
+              chatPaused={chatPaused}
+              chatPrompt={statusData?.chatPrompt ?? null}
+              theme="light"
+            />
           </div>
         )}
+
       </div>
     </div>
   );

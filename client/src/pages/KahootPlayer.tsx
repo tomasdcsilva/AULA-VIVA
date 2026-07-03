@@ -3,6 +3,7 @@ import { Users } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "wouter";
 import { toast } from "sonner";
+import ChatPedagogico from "@/components/ChatPedagogico";
 
 const OPTION_COLORS = [
   { bg: "bg-[#e21b3c] hover:bg-[#c01532] active:bg-[#a01228]", hex: "#e21b3c" },
@@ -114,6 +115,11 @@ export default function KahootPlayer() {
     setPhase("answered");
     // não envia nada ao servidor — simplesmente marca como respondido localmente
   };
+
+  // Estado do chat (para o ecrã de fim de jogo)
+  const chatEnabled = kahootState?.chatEnabled ?? false;
+  const chatPaused = kahootState?.chatPaused ?? false;
+  const chatPrompt = kahootState?.chatPrompt ?? null;
 
   return (
     <div className="fixed inset-0 bg-navy flex flex-col items-center justify-center p-4 overflow-hidden">
@@ -302,18 +308,43 @@ export default function KahootPlayer() {
 
       {/* ── JOGO TERMINADO ── */}
       {(phase === "finished" || phase === "leaderboard") && (
-        <div className="text-center text-white w-full max-w-sm">
-          <div className="text-6xl mb-4">🎓</div>
-          <h2 className="text-2xl font-display font-black mb-2">Sessão concluída!</h2>
-          <p className="text-white/60 mb-8 text-sm">
-            Obrigado pela tua participação. As tuas respostas foram registadas de forma anónima.
-          </p>
-          <div className="bg-white/10 rounded-2xl p-6">
-            <p className="text-white/70 text-sm leading-relaxed">
-              O professor irá agora conduzir a discussão com base nas respostas da turma.
+        <div className="w-full max-w-sm overflow-y-auto max-h-screen py-4">
+          {/* Mensagem de conclusão */}
+          <div className="text-center text-white mb-6">
+            <div className="text-6xl mb-4">🎓</div>
+            <h2 className="text-2xl font-display font-black mb-2">Sessão concluída!</h2>
+            <p className="text-white/60 text-sm">
+              Obrigado pela tua participação. As tuas respostas foram registadas de forma anónima.
             </p>
           </div>
-          <p className="text-white/30 text-xs mt-6">Nenhum nome é revelado — anonimato garantido</p>
+
+          {/* Chat pedagógico — aparece apenas quando o professor ativa */}
+          {chatEnabled ? (
+            <div className="animate-fade-in">
+              <ChatPedagogico
+                sessionId={sessionId}
+                anonToken={anonToken.current}
+                chatPaused={chatPaused}
+                chatPrompt={chatPrompt}
+                theme="dark"
+              />
+            </div>
+          ) : (
+            /* Ecrã de espera: aguarda que o professor abra o debate */
+            <div className="bg-white/10 rounded-2xl p-6 text-center">
+              <div className="text-3xl mb-3">💬</div>
+              <p className="text-white font-bold text-base mb-2">Momento de Debate</p>
+              <p className="text-white/60 text-sm leading-relaxed mb-4">
+                O professor irá abrir o espaço de debate em breve. Quando ativado, poderás partilhar a tua perspetiva de forma anónima.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-white/40 text-xs">
+                <div className="w-2 h-2 bg-teal rounded-full animate-pulse" />
+                A aguardar que o professor abra o debate...
+              </div>
+            </div>
+          )}
+
+          <p className="text-white/30 text-xs mt-6 text-center">Nenhum nome é revelado — anonimato garantido</p>
         </div>
       )}
     </div>
