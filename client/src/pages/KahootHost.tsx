@@ -15,6 +15,7 @@ import {
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
 
 const SCALE_OPTIONS = [
   "Concordo totalmente",
@@ -230,6 +231,11 @@ export default function KahootHost() {
               <p className="text-white/70 text-sm mb-1">Código de entrada</p>
               <p className="text-5xl font-black tracking-widest text-gold">{session.code}</p>
               <p className="text-white/50 text-xs mt-2">Os alunos entram em <strong>aulaviva.manus.space/join</strong></p>
+              <div className="flex justify-center mt-4">
+                <div className="bg-white p-3 rounded-xl">
+                  <QRCodeSVG value={`${window.location.origin}/join?code=${session.code}`} size={140} level="M" />
+                </div>
+              </div>
             </div>
             <div className="flex items-center justify-center gap-2 mb-6 text-white/60">
               <Users className="w-5 h-5" />
