@@ -513,10 +513,17 @@ export const appRouter = router({
               createdAt: s.createdAt,
               className: (s as any).className ?? "",
               sessionDate: (s as any).sessionDate ?? s.createdAt,
+              chatPrompt: (s as any).chatPrompt ?? null,
               chatSummary: {
                 totalMessages: visibleMessages.length,
                 sensitiveCount,
                 highlightedMessages,
+                allMessages: visibleMessages.map((m) => ({
+                  content: m.content,
+                  isSensitive: m.isSensitive,
+                  isHighlighted: m.isHighlighted,
+                  createdAt: m.createdAt,
+                })),
               },
               questionStats: await Promise.all(
                 sessionQs.map(async (q) => ({

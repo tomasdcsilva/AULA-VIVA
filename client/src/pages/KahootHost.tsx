@@ -19,6 +19,7 @@ import {
   Flag,
   Eye,
   EyeOff,
+  BookOpen,
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
@@ -467,22 +468,34 @@ export default function KahootHost() {
 
               {/* Prompt de debate */}
               <div className="mb-4">
-                <p className="text-xs font-semibold text-white/60 uppercase tracking-wide mb-2">Pergunta orientadora (opcional):</p>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {[
-                    "O que sentes quando vês alguém a ser excluído?",
-                    "Já alguma vez sentiste pressão para fazer algo que não querias?",
-                    "O que é para ti uma relação saudável?",
-                    "Quando é que o ciúmes se torna perigoso?",
-                  ].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => { setChatPromptInput(s); setPromptSent(false); }}
-                      className="text-xs bg-white/10 text-white/80 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-colors"
-                    >
-                      {s.slice(0, 40)}{s.length > 40 ? "…" : ""}
-                    </button>
-                  ))}
+                <p className="text-xs font-semibold text-white/60 uppercase tracking-wide mb-2">Escolhe uma pergunta do quiz para debate:</p>
+                <div className="space-y-1.5 mb-3">
+                  {(() => {
+                    if (!quiz || !allQuestions) return (
+                      <p className="text-white/40 text-xs">A carregar perguntas...</p>
+                    );
+                    const qIds: number[] = JSON.parse(quiz.questionIds);
+                    const quizQuestions = qIds
+                      .map((id) => allQuestions.find((q) => q.id === id))
+                      .filter(Boolean) as typeof allQuestions;
+                    if (quizQuestions.length === 0) return (
+                      <p className="text-white/40 text-xs">Nenhuma pergunta encontrada.</p>
+                    );
+                    return quizQuestions.map((q, i) => (
+                      <button
+                        key={q.id}
+                        onClick={() => { setChatPromptInput(q.text); setPromptSent(false); }}
+                        className={`w-full text-left text-xs px-3 py-2 rounded-xl transition-colors flex items-start gap-2 ${
+                          chatPromptInput === q.text
+                            ? "bg-teal/30 border border-teal/60 text-white"
+                            : "bg-white/10 text-white/80 hover:bg-white/20 border border-transparent"
+                        }`}
+                      >
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/20 text-white/60 text-[10px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                        <span className="leading-snug">{q.text}</span>
+                      </button>
+                    ));
+                  })()}
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -540,8 +553,18 @@ export default function KahootHost() {
               {/* Mensagens ao vivo */}
               {kahootState?.chatEnabled && (
                 <div className="mt-4">
+                  {/* Pergunta orientadora ativa */}
+                  {kahootState.chatPrompt && (
+                    <div className="bg-gold/20 border border-gold/40 rounded-xl px-3 py-2.5 mb-3 flex items-start gap-2">
+                      <BookOpen className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] font-bold text-gold uppercase tracking-wide mb-0.5">Pergunta de debate enviada aos alunos</p>
+                        <p className="text-sm text-white/90 leading-snug">{kahootState.chatPrompt}</p>
+                      </div>
+                    </div>
+                  )}
                   <p className="text-xs font-semibold text-white/60 uppercase tracking-wide mb-2">
-                    Mensagens dos alunos (ao vivo):
+                    Respostas dos alunos ao debate ({liveChatMessages?.length ?? 0}):
                   </p>
                   <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
                     {loadingChat ? (

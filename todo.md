@@ -260,3 +260,12 @@
 ## Chat ao Vivo no KahootHost (Jul 2026)
 
 - [x] KahootHost: adicionar painel de mensagens do chat ao vivo (com moderação) no ecrã de debate
+
+## Debate ligado às perguntas do quiz (Jul 2026)
+
+- [ ] KahootHost: substituir sugestões genéricas de debate pelas perguntas reais do quiz como opções orientadoras
+
+## Contexto do chat e relatório (Jul 2026)
+
+- [x] KahootHost: mostrar pergunta orientadora como cabeçalho acima das mensagens ao vivo
+- [x] Relatório de jogo: adicionar secção de chat com pergunta de debate e mensagens completas
