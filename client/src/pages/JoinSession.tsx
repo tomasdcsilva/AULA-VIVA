@@ -1,18 +1,20 @@
 import { BookOpen, ArrowRight, Shield } from "lucide-react";
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 export default function JoinSession() {
-  const [code, setCode] = useState("");
+  const searchString = useSearch();
+  const params = new URLSearchParams(searchString);
+  const codeFromUrl = params.get("code")?.toUpperCase() ?? "";
+
+  const [code, setCode] = useState(codeFromUrl);
   const [, navigate] = useLocation();
 
   const join = trpc.sessions.join.useMutation({
     onSuccess: (data) => {
-      // Guardar dados da sessão no sessionStorage (sem identificação)
       sessionStorage.setItem("av_session", JSON.stringify(data));
-      // Redirecionar para modo Kahoot se aplicável
       if (data.mode === "kahoot") {
         navigate(`/kahoot/play/${data.sessionId}`);
       } else {
@@ -21,6 +23,14 @@ export default function JoinSession() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  // Auto-submit quando o código vem do QR code
+  useEffect(() => {
+    if (codeFromUrl && codeFromUrl.length >= 5) {
+      join.mutate({ code: codeFromUrl });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,34 +57,41 @@ export default function JoinSession() {
         <div className="av-card shadow-lg">
           <h2 className="text-xl font-display font-bold text-navy mb-1">Entrar na Sessão</h2>
           <p className="text-muted-foreground text-sm mb-6">
-            Introduz o código que o teu professor escreveu no quadro.
+            Introduz o código que o teu professor escreveu no quadro, ou aponta a câmara ao QR Code.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-navy mb-2">Código da Sessão</label>
-              <input
-                type="text"
-                className="w-full border-2 border-border rounded-xl px-4 py-4 text-2xl font-mono font-bold text-center text-navy tracking-[0.3em] uppercase focus:outline-none focus:border-teal bg-cream-dark placeholder:text-muted-foreground/40 placeholder:text-lg placeholder:tracking-normal"
-                placeholder="AB-123"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                maxLength={6}
-                autoFocus
-              />
+          {join.isPending && codeFromUrl ? (
+            <div className="flex flex-col items-center py-8 gap-3">
+              <span className="w-8 h-8 border-4 border-teal border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-muted-foreground">A entrar na sessão <span className="font-mono font-bold text-navy">{codeFromUrl}</span>…</p>
             </div>
-            <button
-              type="submit"
-              disabled={join.isPending}
-              className="av-btn-primary w-full flex items-center justify-center gap-2 text-base py-4"
-            >
-              {join.isPending ? (
-                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>Entrar <ArrowRight className="w-5 h-5" /></>
-              )}
-            </button>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-navy mb-2">Código da Sessão</label>
+                <input
+                  type="text"
+                  className="w-full border-2 border-border rounded-xl px-4 py-4 text-2xl font-mono font-bold text-center text-navy tracking-[0.3em] uppercase focus:outline-none focus:border-teal bg-cream-dark placeholder:text-muted-foreground/40 placeholder:text-lg placeholder:tracking-normal"
+                  placeholder="AB-123"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                  autoFocus={!codeFromUrl}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={join.isPending}
+                className="av-btn-primary w-full flex items-center justify-center gap-2 text-base py-4"
+              >
+                {join.isPending ? (
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>Entrar <ArrowRight className="w-5 h-5" /></>
+                )}
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Garantia de anonimato */}

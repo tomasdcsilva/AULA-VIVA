@@ -551,6 +551,8 @@ export const appRouter = router({
           className: z.string().optional(),
           sessionDate: z.string().optional(), // ISO date string
           mode: z.enum(["normal", "kahoot"]).optional().default("normal"),
+          isAsync: z.boolean().optional().default(false),
+          asyncExpiresAt: z.string().optional(), // ISO date string
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -572,7 +574,10 @@ export const appRouter = router({
           className: input.className,
           sessionDate: input.sessionDate ? new Date(input.sessionDate) : new Date(),
           mode: input.mode,
-          status: "waiting",
+          // Modo assíncrono: sessão abre imediatamente em estado active
+          isAsync: input.isAsync ?? false,
+          asyncExpiresAt: input.asyncExpiresAt ? new Date(input.asyncExpiresAt) : undefined,
+          status: input.isAsync ? "active" : "waiting",
         });
         const session = await getSessionByCode(code);
         return session!;
@@ -643,6 +648,7 @@ export const appRouter = router({
           })),
           quizTitle: quiz?.title ?? "",
           literaryWork: quiz?.literaryWork ?? "",
+          isAsync: s.isAsync ?? false,
         };
       }),
 
@@ -652,7 +658,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const s = await getSessionById(input.sessionId);
         if (!s) throw new TRPCError({ code: "NOT_FOUND" });
-        return { status: s.status, chatEnabled: s.chatEnabled, chatPaused: s.chatPaused };
+        return { status: s.status, chatEnabled: s.chatEnabled, chatPaused: s.chatPaused, isAsync: s.isAsync, asyncExpiresAt: s.asyncExpiresAt };
       }),
 
     // Eliminar sessão e todos os dados associados

@@ -230,3 +230,9 @@
 
 - [x] KahootPlayer: cartões coloridos mostram agora o texto das opções (múltipla escolha)
 - [x] ProjectionView: gráfico limpa imediatamente ao mudar de pergunta (sem mostrar dados da pergunta anterior)
+
+## Novas Funcionalidades (Jul 2026 — sessão 3)
+
+- [x] Chat anónimo funcional e visível no ecrã do aluno (StudentSession)
+- [x] Modo assíncrono: sessão aberta que os alunos fazem quando querem sem professor
+- [x] QR code gerado para cada código de sessão (no painel do professor e no ecrã de espera)

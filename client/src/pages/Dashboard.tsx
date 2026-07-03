@@ -15,10 +15,13 @@ import {
   CalendarDays,
   Users2,
   School,
+  Home,
+  QrCode,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   waiting:       { label: "A aguardar", color: "bg-amber-100 text-amber-800" },
@@ -37,6 +40,106 @@ interface LaunchModalProps {
   onClose: () => void;
   onLaunch: (data: { quizId: number; school?: string; className?: string; sessionDate?: string; mode: "kahoot" }) => void;
   isPending: boolean;
+}
+
+interface AsyncModalProps {
+  quiz: { id: number; title: string; className?: string | null };
+  onClose: () => void;
+  onLaunch: (data: { quizId: number; school?: string; className?: string; sessionDate?: string; isAsync: true; asyncExpiresAt?: string }) => void;
+  isPending: boolean;
+  createdSession?: { code: string } | null;
+}
+
+function AsyncModal({ quiz, onClose, onLaunch, isPending, createdSession }: AsyncModalProps) {
+  const [school, setSchool] = useState("");
+  const [className, setClassName] = useState(quiz.className ?? "");
+  const [sessionDate, setSessionDate] = useState(todayISO());
+  const [expiresAt, setExpiresAt] = useState("");
+  const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/join` : "/join";
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onLaunch({
+      quizId: quiz.id,
+      school: school || undefined,
+      className: className || undefined,
+      sessionDate: sessionDate || undefined,
+      isAsync: true,
+      asyncExpiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-navy">
+          <X className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-teal/10 rounded-xl flex items-center justify-center">
+            <Home className="w-5 h-5 text-teal" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold text-navy text-lg">Sessão em Casa</h2>
+            <p className="text-xs text-muted-foreground truncate max-w-[220px]">{quiz.title}</p>
+          </div>
+        </div>
+
+        {createdSession ? (
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-3">Sessão criada! Partilha o código ou o QR Code com os alunos.</p>
+            <p className="text-4xl font-mono font-bold text-navy tracking-widest mb-4">{createdSession.code}</p>
+            <div className="flex justify-center mb-4">
+              <QRCodeSVG value={`${joinUrl}?code=${createdSession.code}`} size={180} level="M" />
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">{joinUrl}</p>
+            <button
+              onClick={() => { navigator.clipboard.writeText(createdSession.code); toast.success("Código copiado!"); }}
+              className="flex items-center gap-2 mx-auto text-teal text-sm font-semibold hover:underline mb-4"
+            >
+              <Copy className="w-4 h-4" /> Copiar Código
+            </button>
+            <button onClick={onClose} className="av-btn-primary w-full">Fechar</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <p className="text-sm text-muted-foreground">Os alunos podem responder quando quiserem, sem o professor presente. O código fica ativo até à data de expiração.</p>
+            <div>
+              <label className="block text-sm font-semibold text-navy mb-1 flex items-center gap-1.5">
+                <School className="w-4 h-4 text-teal" /> Escola
+              </label>
+              <input className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-background" placeholder="Ex: EB 2,3 de Pesqueira" value={school} onChange={(e) => setSchool(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-navy mb-1 flex items-center gap-1.5">
+                <Users2 className="w-4 h-4 text-teal" /> Turma
+              </label>
+              <input className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-background" placeholder="Ex: 9.º A" value={className} onChange={(e) => setClassName(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-navy mb-1 flex items-center gap-1.5">
+                <CalendarDays className="w-4 h-4 text-teal" /> Data da Sessão
+              </label>
+              <input type="date" className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-background" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-navy mb-1 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-teal" /> Disponível até (opcional)
+              </label>
+              <input type="date" className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal bg-background" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={onClose} className="flex-1 border border-border rounded-xl py-2.5 text-sm font-semibold text-navy hover:bg-cream-dark transition-colors">Cancelar</button>
+              <button type="submit" disabled={isPending} className="flex-1 bg-teal hover:bg-teal-dark text-white font-bold py-2.5 rounded-xl text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+                {isPending ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Home className="w-4 h-4" />}
+                Criar Sessão em Casa
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function LaunchModal({ quiz, onClose, onLaunch, isPending }: LaunchModalProps) {
@@ -149,6 +252,8 @@ export default function Dashboard() {
   const { data: quizzes, refetch: refetchQuizzes } = trpc.quizzes.list.useQuery(undefined, { enabled: isAuthenticated });
   const { data: sessions } = trpc.sessions.list.useQuery(undefined, { enabled: isAuthenticated });
   const [launchQuiz, setLaunchQuiz] = useState<{ id: number; title: string; className?: string | null; discipline?: string | null } | null>(null);
+  const [asyncQuiz, setAsyncQuiz] = useState<{ id: number; title: string; className?: string | null } | null>(null);
+  const [asyncCreatedSession, setAsyncCreatedSession] = useState<{ code: string } | null>(null);
 
   const deleteSession = trpc.sessions.delete.useMutation({
     onSuccess: () => { toast.success("Sessão eliminada."); },
@@ -171,6 +276,10 @@ export default function Dashboard() {
   });
   const createKahootSession = trpc.sessions.create.useMutation({
     onSuccess: (s) => { setLaunchQuiz(null); navigate(`/kahoot/host/${s.id}`); },
+    onError: (e) => toast.error(e.message),
+  });
+  const createAsyncSession = trpc.sessions.create.useMutation({
+    onSuccess: (s) => { setAsyncCreatedSession({ code: s.code }); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -207,6 +316,16 @@ export default function Dashboard() {
           onClose={() => setLaunchQuiz(null)}
           onLaunch={(data) => createKahootSession.mutate(data)}
           isPending={createKahootSession.isPending}
+        />
+      )}
+      {/* Modal de sessão assíncrona */}
+      {asyncQuiz && (
+        <AsyncModal
+          quiz={asyncQuiz}
+          onClose={() => { setAsyncQuiz(null); setAsyncCreatedSession(null); }}
+          onLaunch={(data) => createAsyncSession.mutate({ ...data, mode: "normal" })}
+          isPending={createAsyncSession.isPending}
+          createdSession={asyncCreatedSession}
         />
       )}
 
@@ -319,13 +438,22 @@ export default function Dashboard() {
                   {q.className && <span className="av-badge bg-cream-dark text-navy">👥 {q.className}</span>}
                 </div>
 
-                {/* Botão principal: Jogar */}
-                <button
-                  onClick={() => setLaunchQuiz(q)}
-                  className="w-full bg-[#e21b3c] hover:bg-[#c01532] active:scale-95 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-base transition-all mb-3 shadow-sm"
-                >
-                  <Gamepad2 className="w-5 h-5" /> Jogar
-                </button>
+                {/* Botões principais: Jogar e Em Casa */}
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => setLaunchQuiz(q)}
+                    className="flex-1 bg-[#e21b3c] hover:bg-[#c01532] active:scale-95 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm transition-all shadow-sm"
+                  >
+                    <Gamepad2 className="w-4 h-4" /> Jogar
+                  </button>
+                  <button
+                    onClick={() => { setAsyncQuiz(q); setAsyncCreatedSession(null); }}
+                    className="flex-1 bg-teal hover:bg-teal-dark active:scale-95 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm transition-all shadow-sm"
+                    title="Criar sessão para os alunos fazerem em casa"
+                  >
+                    <Home className="w-4 h-4" /> Em Casa
+                  </button>
+                </div>
 
                 {/* Botões secundários: Editar e Gerir */}
                 <div className="flex gap-2">

@@ -361,6 +361,8 @@ export async function getSessionsByTeacher(teacherId: number) {
       sessionDate: sessions.sessionDate,
       createdAt: sessions.createdAt,
       quizTitle: quizzes.title,
+      isAsync: sessions.isAsync,
+      asyncExpiresAt: sessions.asyncExpiresAt,
     })
     .from(sessions)
     .leftJoin(quizzes, eq(sessions.quizId, quizzes.id))

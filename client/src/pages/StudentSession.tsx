@@ -18,6 +18,7 @@ interface SessionData {
   questions: { id: number; text: string; type: string; options: string[] }[];
   quizTitle: string;
   literaryWork: string;
+  isAsync: boolean;
 }
 
 const CHART_COLORS = [
@@ -87,6 +88,13 @@ export default function StudentSession() {
       const isHidden = sessionData?.hiddenResultsQuestionIds?.includes(activeQ.id) ?? false;
       if (sessionData?.showResultsImmediately && !isHidden) setShowStats(true);
       toast.success("Resposta enviada!");
+      // Modo assíncrono: avançar automaticamente para a próxima pergunta após 1.5s
+      if (sessionData?.isAsync) {
+        const nextIdx = currentQ + 1;
+        if (nextIdx < (sessionData?.questions.length ?? 0)) {
+          setTimeout(() => { setCurrentQ(nextIdx); setShowStats(false); }, 1500);
+        }
+      }
     },
     onError: (e) => toast.error(e.message),
   });
@@ -127,8 +135,8 @@ export default function StudentSession() {
     </div>
   );
 
-  // A aguardar
-  if (currentStatus === "waiting") return (
+  // A aguardar (só para sessões não-assíncronas)
+  if (currentStatus === "waiting" && !sessionData.isAsync) return (
     <div className="min-h-screen bg-cream flex items-center justify-center px-4">
       <div className="max-w-md text-center animate-fade-in">
         <div className="w-16 h-16 bg-navy rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -166,8 +174,23 @@ export default function StudentSession() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-6">
+        {/* Modo assíncrono: ecrã de conclusão quando todas as perguntas foram respondidas */}
+        {sessionData.isAsync && sessionData.questions.length > 0 && sessionData.questions.every(q => submitted[q.id]) && (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="text-center animate-scale-in">
+              <CheckCircle className="w-16 h-16 text-teal mx-auto mb-4" />
+              <h2 className="text-2xl font-display font-bold text-navy mb-2">Concluíste o quiz!</h2>
+              <p className="text-muted-foreground mb-4">Obrigado pela tua participação! A tua identidade permanece protegida.</p>
+              <div className="bg-teal-light rounded-xl p-4 text-left max-w-xs mx-auto">
+                <p className="font-bold text-teal-dark text-sm">{sessionData.quizTitle}</p>
+                <p className="text-xs text-teal-dark/70 mt-1">{sessionData.questions.length} perguntas respondidas</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Votação */}
-        {(currentStatus === "active" || currentStatus === "voting_closed") && (
+        {(!sessionData.isAsync || !sessionData.questions.every(q => submitted[q.id])) && (currentStatus === "active" || currentStatus === "voting_closed") && (
           <div className="animate-fade-in">
             {/* Navegação entre perguntas */}
             <div className="flex gap-1.5 mb-5 flex-wrap">

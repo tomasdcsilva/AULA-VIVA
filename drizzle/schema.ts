@@ -111,6 +111,9 @@ export const sessions = mysqlTable("sessions", {
   activeQuestionIndex: int("activeQuestionIndex").default(-1).notNull(),
   questionStartedAt: timestamp("questionStartedAt"),
   questionDuration: int("questionDuration").default(20).notNull(), // segundos
+  // Modo assíncrono (alunos respondem quando querem, sem professor a controlar)
+  isAsync: boolean("isAsync").default(false).notNull(),
+  asyncExpiresAt: timestamp("asyncExpiresAt"), // null = sem prazo
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   closedAt: timestamp("closedAt"),
 });

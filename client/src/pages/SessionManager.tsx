@@ -3,7 +3,7 @@ import PedagogicBox from "@/components/PedagogicBox";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft, Play, Square, MessageCircle, PauseCircle, PlayCircle,
-  Eye, EyeOff, Flag, Star, BarChart3, FileText, Copy, Users, Monitor, Sheet
+  Eye, EyeOff, Flag, Star, BarChart3, FileText, Copy, Users, Monitor, Sheet, QrCode
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useParams } from "wouter";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from "recharts";
+import { QRCodeSVG } from "qrcode.react";
 
 const STATUS_FLOW = ["waiting", "active", "voting_closed", "chat_open", "closed"] as const;
 type SessionStatus = (typeof STATUS_FLOW)[number];
@@ -38,6 +39,8 @@ export default function SessionManager() {
   const { isAuthenticated } = useAuth();
   const [activeQuestionId, setActiveQuestionId] = useState<number | null>(null);
   const [reportVisible, setReportVisible] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/join` : "/join";
 
   const { data: session, refetch: refetchSession } = trpc.sessions.get.useQuery(
     { id: sessionId },
@@ -134,15 +137,34 @@ export default function SessionManager() {
         destacadas para a tua atenção imediata.
       </PedagogicBox>
 
+      {/* QR Code modal */}
+      {showQR && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowQR(false)}>
+          <div className="bg-white rounded-2xl p-8 shadow-2xl text-center max-w-xs w-full" onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-semibold text-navy mb-1">Aponta a câmara para entrar</p>
+            <p className="text-xs text-muted-foreground mb-4">{joinUrl} · Código: <span className="font-mono font-bold">{session.code}</span></p>
+            <div className="flex justify-center mb-4">
+              <QRCodeSVG value={`${joinUrl}?code=${session.code}`} size={200} level="M" />
+            </div>
+            <button onClick={() => setShowQR(false)} className="text-sm text-muted-foreground hover:text-navy underline">Fechar</button>
+          </div>
+        </div>
+      )}
+
       {/* Painel de estado */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
         {/* Código */}
         <div className="av-card-teal text-center">
           <p className="text-xs font-semibold text-teal-dark uppercase tracking-wider mb-1">Código da Sessão</p>
           <p className="text-4xl font-mono font-bold text-navy tracking-widest mb-2">{session.code}</p>
-          <button onClick={copyCode} className="text-teal text-sm font-semibold flex items-center gap-1 mx-auto hover:underline">
-            <Copy className="w-3 h-3" /> Copiar
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button onClick={copyCode} className="text-teal text-sm font-semibold flex items-center gap-1 hover:underline">
+              <Copy className="w-3 h-3" /> Copiar
+            </button>
+            <button onClick={() => setShowQR(true)} className="text-teal text-sm font-semibold flex items-center gap-1 hover:underline">
+              <QrCode className="w-3 h-3" /> QR Code
+            </button>
+          </div>
         </div>
 
         {/* Estado */}
@@ -180,6 +202,12 @@ export default function SessionManager() {
                 className="bg-amber-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-amber-600 transition-colors flex items-center gap-2"
               >
                 <Square className="w-4 h-4" /> Encerrar Votação
+              </button>
+              <button
+                onClick={() => updateStatus.mutate({ id: sessionId, status: "chat_open", chatEnabled: true })}
+                className="bg-teal text-white font-semibold px-5 py-3 rounded-xl hover:bg-teal-dark transition-colors flex items-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4" /> Abrir Chat
               </button>
               <button
                 onClick={() => { if (confirm("Tens a certeza que queres encerrar a sessão agora?")) updateStatus.mutate({ id: sessionId, status: "closed" }); }}
