@@ -256,3 +256,7 @@
 - [x] SessionManager: contador de mensagens no cabeçalho do painel de moderação
 - [x] ChatPedagogico: substituir 116 006 pelas linhas corretas em Portugal (116 111, 1411, SOS Voz Amiga)
 - [x] Manual.tsx: atualizar referência às linhas de apoio corretas
+
+## Chat ao Vivo no KahootHost (Jul 2026)
+
+- [x] KahootHost: adicionar painel de mensagens do chat ao vivo (com moderação) no ecrã de debate

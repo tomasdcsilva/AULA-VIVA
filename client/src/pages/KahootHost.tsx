@@ -15,6 +15,10 @@ import {
   Send,
   PauseCircle,
   PlayCircle,
+  Star,
+  Flag,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
@@ -94,6 +98,17 @@ export default function KahootHost() {
     { sessionId },
     { enabled: phase === "leaderboard" }
   );
+
+  // Mensagens do chat ao vivo (apenas quando o chat está ativo)
+  const { data: liveChatMessages, isLoading: loadingChat, isError: chatError, refetch: refetchLiveChat } = trpc.chat.allMessages.useQuery(
+    { sessionId },
+    { enabled: validId && isAuthenticated && !!kahootState?.chatEnabled, refetchInterval: 2000 }
+  );
+
+  const moderateMsg = trpc.chat.moderate.useMutation({
+    onSuccess: () => refetchLiveChat(),
+    onError: (e) => toast.error(e.message),
+  });
 
   // Mutations
   const nextQuestion = trpc.kahoot.nextQuestion.useMutation({
@@ -513,9 +528,85 @@ export default function KahootHost() {
                   <div className="flex items-center gap-2 text-teal text-sm font-semibold">
                     <div className="w-2 h-2 bg-teal rounded-full animate-pulse" />
                     Chat ativo
+                    {liveChatMessages && liveChatMessages.length > 0 && (
+                      <span className="ml-1 bg-teal/30 text-teal-light text-xs font-bold px-2 py-0.5 rounded-full">
+                        {liveChatMessages.length}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Mensagens ao vivo */}
+              {kahootState?.chatEnabled && (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold text-white/60 uppercase tracking-wide mb-2">
+                    Mensagens dos alunos (ao vivo):
+                  </p>
+                  <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                    {loadingChat ? (
+                      <p className="text-white/40 text-sm text-center py-4">A carregar mensagens...</p>
+                    ) : chatError ? (
+                      <p className="text-red-400 text-sm text-center py-4">Erro ao carregar mensagens. Tenta atualizar a página.</p>
+                    ) : !liveChatMessages || liveChatMessages.length === 0 ? (
+                      <p className="text-white/40 text-sm text-center py-4">
+                        Nenhuma mensagem ainda. Os alunos podem escrever agora.
+                      </p>
+                    ) : (
+                      [...liveChatMessages].reverse().map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`rounded-xl px-3 py-2.5 flex items-start gap-2.5 ${
+                            msg.isSensitive
+                              ? "bg-red-900/60 border border-red-500/50"
+                              : msg.isHighlighted
+                                ? "bg-gold/20 border border-gold/40"
+                                : msg.isHidden
+                                  ? "bg-white/5 opacity-40"
+                                  : "bg-white/10"
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            {msg.isSensitive && (
+                              <span className="text-xs font-bold text-red-400 block mb-0.5">⚠️ Sensível</span>
+                            )}
+                            <p className="text-sm text-white leading-snug break-words">{msg.content}</p>
+                            <p className="text-xs text-white/40 mt-0.5">
+                              {new Date(msg.createdAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                            </p>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => moderateMsg.mutate({ messageId: msg.id, action: "highlight", sessionId })}
+                              disabled={moderateMsg.isPending}
+                              title="Destacar"
+                              className="p-1.5 text-amber-400 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40"
+                            >
+                              <Star className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => moderateMsg.mutate({ messageId: msg.id, action: "flag_sensitive", sessionId })}
+                              disabled={moderateMsg.isPending}
+                              title="Sinalizar sensível"
+                              className="p-1.5 text-red-400 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40"
+                            >
+                              <Flag className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => moderateMsg.mutate({ messageId: msg.id, action: "hide", sessionId })}
+                              disabled={moderateMsg.isPending}
+                              title="Ocultar"
+                              className="p-1.5 text-white/40 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-40"
+                            >
+                              {msg.isHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
