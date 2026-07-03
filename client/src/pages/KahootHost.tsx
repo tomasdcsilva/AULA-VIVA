@@ -133,14 +133,6 @@ export default function KahootHost() {
     }
   }, [kahootState]);
 
-  // Temporizador local (complementa o polling)
-  useEffect(() => {
-    if (phase !== "question") return;
-    if (timeLeft <= 0) return;
-    const t = setTimeout(() => setTimeLeft((p) => Math.max(0, p - 1)), 1000);
-    return () => clearTimeout(t);
-  }, [phase, timeLeft]);
-
   const questionIds: number[] = quiz ? JSON.parse(quiz.questionIds) : [];
   const totalQuestions = questionIds.length;
 
@@ -160,6 +152,17 @@ export default function KahootHost() {
     setPhase("results");
     setShowingResults(true);
   }, [sessionId, closeQuestion]);
+
+  // Temporizador local (complementa o polling) — avança automaticamente quando o tempo acaba
+  useEffect(() => {
+    if (phase !== "question") return;
+    if (timeLeft <= 0) {
+      handleCloseQuestion();
+      return;
+    }
+    const t = setTimeout(() => setTimeLeft((p) => Math.max(0, p - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [phase, timeLeft, handleCloseQuestion]);
 
   const handleNextQuestion = useCallback(() => {
     const next = currentQIndex + 1;
