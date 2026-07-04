@@ -277,4 +277,4 @@
 - [x] Backend: allMessages e report devolvem mensagens agrupadas por ronda (chatRoundId + chatRoundPrompt)
 - [x] Frontend KahootHost: mostrar mensagens agrupadas por ronda de debate
 - [x] Frontend QuizStats: mostrar rondas de debate separadas no relatório
-- [ ] Dados fictícios: criar sessão demo com 3 rondas de debate para demonstração
+- [x] Dados fictícios: criar sessão demo com 3 rondas de debate para demonstração
