@@ -5,7 +5,6 @@
   },
   "deploy": {
     "startCommand": "pnpm build && pnpm start",
-    "healthcheckPath": "/api/health",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
