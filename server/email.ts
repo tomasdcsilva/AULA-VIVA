@@ -1,11 +1,14 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Resend é opcional — sem RESEND_API_KEY os emails não são enviados mas o servidor não crasha
+const resendKey = process.env.RESEND_API_KEY;
+const resend = resendKey ? new Resend(resendKey) : null;
 
 const FROM = "Aula Viva <onboarding@resend.dev>";
 const APP_URL = process.env.APP_URL || "https://aulaviva-p8o2mkci.manus.space";
 
 export async function sendVerificationEmail(email: string, name: string, token: string) {
+  if (!resend) { console.warn('[Email] RESEND_API_KEY not set, skipping verification email'); return; }
   const link = `${APP_URL}/verify-email?token=${token}`;
   await resend.emails.send({
     from: FROM,
@@ -40,6 +43,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, code: string) {
+  if (!resend) { console.warn('[Email] RESEND_API_KEY not set, skipping password reset email'); return; }
   await resend.emails.send({
     from: FROM,
     to: email,
