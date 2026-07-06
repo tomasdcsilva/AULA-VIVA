@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 // Resend é opcional — sem RESEND_API_KEY os emails não são enviados mas o servidor não crasha
-const resendKey = process.env.RESEND_API_KEY;
+const resendKey = process.env.RESEND_API_KEY || process.env.API;
 const resend = resendKey ? new Resend(resendKey) : null;
 
 const FROM = "Aula Viva <onboarding@resend.dev>";
