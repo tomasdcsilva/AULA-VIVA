@@ -1,4 +1,4 @@
-import { Shield, BarChart3, CheckCircle, BookOpen } from "lucide-react";
+import { Shield, BarChart3, CheckCircle, BookOpen, ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -79,6 +79,7 @@ export default function StudentSession() {
       if (!activeQ) return;
       setSubmitted((prev) => ({ ...prev, [activeQ.id]: true }));
       const isHidden = sessionData?.hiddenResultsQuestionIds?.includes(activeQ.id) ?? false;
+      // Só mostra stats se showResultsImmediately E a pergunta não está oculta
       if (sessionData?.showResultsImmediately && !isHidden) setShowStats(true);
       toast.success("Resposta enviada!");
       // Modo assíncrono: avançar automaticamente para a próxima pergunta após 1.5s
@@ -292,11 +293,37 @@ export default function StudentSession() {
                   </button>
                 )}
 
-                {submitted[activeQ.id] && (
-                  <div className="mt-4 flex items-center gap-2 text-teal text-sm font-semibold">
-                    <CheckCircle className="w-4 h-4" /> Resposta enviada com sucesso!
-                  </div>
-                )}
+                {/* Após submissão */}
+                {submitted[activeQ.id] && (() => {
+                  const isHidden = sessionData?.hiddenResultsQuestionIds?.includes(activeQ.id) ?? false;
+                  const hasNextQ = currentQ + 1 < sessionData.questions.length;
+
+                  return (
+                    <div className="mt-4 animate-fade-in">
+                      <div className="flex items-center gap-2 text-teal text-sm font-semibold mb-3">
+                        <CheckCircle className="w-4 h-4" /> Resposta enviada com sucesso!
+                      </div>
+
+                      {/* Se resultados ocultos: mostrar botão "Próxima Pergunta" */}
+                      {isHidden && hasNextQ && (
+                        <button
+                          onClick={() => { setCurrentQ(currentQ + 1); setShowStats(false); }}
+                          className="av-btn-primary w-full flex items-center justify-center gap-2"
+                        >
+                          Próxima Pergunta <ArrowRight className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {/* Se resultados ocultos e é a última pergunta */}
+                      {isHidden && !hasNextQ && (
+                        <div className="bg-teal-light rounded-xl p-4 text-center">
+                          <p className="text-teal-dark font-semibold text-sm">✅ Concluíste todas as perguntas!</p>
+                          <p className="text-teal-dark/70 text-xs mt-1">Os resultados serão partilhados pelo professor no relatório.</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Estatísticas — ocultas se a pergunta estiver na lista hiddenResultsQuestionIds */}
                 {(showStats || currentStatus === "voting_closed") && stats && stats.length > 0 && !(sessionData?.hiddenResultsQuestionIds?.includes(activeQ.id) ?? false) && (
@@ -327,8 +354,6 @@ export default function StudentSession() {
             )}
           </div>
         )}
-
-
 
         {/* Chat Pedagógico */}
         {chatEnabled && (

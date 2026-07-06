@@ -173,9 +173,9 @@ const questions = [
 // Inserir perguntas
 for (const q of questions) {
   await connection.execute(
-    `INSERT INTO questions (text, type, category, sensitivityLevel, options, isValidated, createdAt)
-     VALUES (?, ?, ?, ?, ?, ?, NOW())
-     ON DUPLICATE KEY UPDATE text=text`,
+    `INSERT INTO questions (text, type, category, sensitivityLevel, options, isValidated, isSystemSuggestion, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, 1, NOW())
+     ON DUPLICATE KEY UPDATE isSystemSuggestion=1`,
     [q.text, q.type, q.category, q.sensitivityLevel, q.options, q.isValidated ? 1 : 0]
   );
 }

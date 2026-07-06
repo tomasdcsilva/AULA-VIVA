@@ -774,6 +774,13 @@ export async function getKahootState(sessionId: number) {
     }
   }
 
+  // Obter hiddenResultsQuestionIds do quiz
+  let hiddenResultsQuestionIds: number[] = [];
+  const quizForHidden = await getQuizById(sess.quizId);
+  if (quizForHidden?.hiddenResultsQuestionIds) {
+    try { hiddenResultsQuestionIds = JSON.parse(quizForHidden.hiddenResultsQuestionIds); } catch { /* ignore */ }
+  }
+
   return {
     status: sess.status,
     activeQuestionIndex: sess.activeQuestionIndex,
@@ -788,6 +795,7 @@ export async function getKahootState(sessionId: number) {
     chatPaused: sess.chatPaused,
     chatPrompt: sess.chatPrompt ?? null,
     chatCurrentRound: sess.chatCurrentRound ?? 0,
+    hiddenResultsQuestionIds,
   };
 }
 

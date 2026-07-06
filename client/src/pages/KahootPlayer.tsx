@@ -69,7 +69,14 @@ export default function KahootPlayer() {
 
     if (status === "voting_closed") {
       if (phase === "question" || phase === "answered") {
-        setPhase("results");
+        // Se a pergunta ativa está oculta, não avança para "results" (sem gráficos)
+        const hidden = kahootState?.hiddenResultsQuestionIds ?? [];
+        const activeId = kahootState?.activeQuestionId;
+        if (activeId && hidden.includes(activeId)) {
+          // Mantém em "answered" — aguarda próxima pergunta silenciosamente
+        } else {
+          setPhase("results");
+        }
       }
     }
   }, [kahootState]);
